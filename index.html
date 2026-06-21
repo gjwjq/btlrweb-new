@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="도서 검색부터 예약까지 한 번에 이용하는 모바일 중심 공공 도서관 서비스" />
+    <title>BOOK TO LEARN &amp; RUN</title>
+    <link rel="icon" href="image/logo.png" type="image/png" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="home">
+    <a class="skip-link" href="#main-content">본문 바로가기</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="index.html" aria-label="BOOK TO LEARN & RUN 홈">
+          <span class="brand-mark" aria-hidden="true"><span></span></span>
+          <span class="brand-copy"><strong>BOOK TO LEARN &amp; RUN</strong><small>PUBLIC LIBRARY SERVICE</small></span>
+        </a>
+        <form class="header-search" role="search">
+          <label class="sr-only" for="header-search-home">도서 검색</label>
+          <input id="header-search-home" name="q" type="search" placeholder="책 제목, 저자, 키워드 검색" />
+          <button type="submit" aria-label="검색"><span aria-hidden="true">⌕</span><span class="search-text">검색</span></button>
+        </form>
+        <div class="auth-area" data-auth-area></div>
+      </div>
+      <nav class="main-nav" aria-label="주요 메뉴">
+        <div class="nav-inner">
+          <a class="active" href="index.html">홈</a>
+          <a href="search.html">도서검색</a>
+          <a href="mypage.html">마이페이지</a>
+          <span class="nav-message">읽고, 배우고, 오늘을 움직이세요.</span>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <section class="hero">
+        <div class="shell hero-grid">
+          <div class="hero-copy">
+            <p class="eyebrow">READ · LEARN · RUN</p>
+            <h1>도서 검색부터 예약까지,<br /><em>모바일에서 한 번에</em></h1>
+            <p class="hero-description">흩어진 도서관 정보를 한곳에 모았습니다. 원하는 책의 위치와 대출 상태를 확인하고, 다음 독서까지 가볍게 이어가세요.</p>
+            <form class="hero-search" role="search">
+              <label class="sr-only" for="hero-search-input">도서 검색</label>
+              <input id="hero-search-input" name="q" type="search" placeholder="오늘은 어떤 책을 찾고 있나요?" autocomplete="off" />
+              <button class="button button-primary" type="submit">책 찾기 <span aria-hidden="true">→</span></button>
+            </form>
+            <div class="keyword-row" aria-label="추천 검색어">
+              <span>추천</span>
+              <button type="button" data-keyword="자기계발">자기계발</button>
+              <button type="button" data-keyword="진로">진로</button>
+              <button type="button" data-keyword="취업">취업</button>
+              <button type="button" data-keyword="소설">소설</button>
+              <button type="button" data-keyword="인문">인문</button>
+              <button type="button" data-keyword="경제">경제</button>
+              <button type="button" data-keyword="IT">IT</button>
+              <button type="button" data-keyword="에세이">에세이</button>
+            </div>
+            <div class="recent-searches" id="recent-searches" hidden></div>
+          </div>
+          <div class="hero-visual" aria-label="책과 독서 공간을 표현한 이미지">
+            <div class="hero-image"></div>
+            <div class="floating-card floating-card-top"><span>오늘의 발견</span><strong>새로운 관점을<br />만나는 가장 빠른 길</strong></div>
+            <div class="floating-card floating-card-bottom"><b id="available-count">0</b><span>권의 도서를<br />지금 바로 대출 가능</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="quick-service section">
+        <div class="shell">
+          <div class="section-heading compact">
+            <div><p class="eyebrow">QUICK SERVICE</p><h2>책을 찾는 가장 짧은 동선</h2></div>
+          </div>
+          <div class="service-grid">
+            <a class="service-card" href="search.html"><span class="service-icon">⌕</span><div><strong>통합 도서 검색</strong><small>제목·저자·키워드를 한 번에</small></div><span>→</span></a>
+            <a class="service-card" href="search.html?status=%EB%8C%80%EC%B6%9C%20%EA%B0%80%EB%8A%A5"><span class="service-icon">✓</span><div><strong>대출 가능 도서</strong><small>지금 빌릴 수 있는 책만 보기</small></div><span>→</span></a>
+            <a class="service-card" href="mypage.html"><span class="service-icon">♡</span><div><strong>내 서재</strong><small>찜·대여·예약 현황 관리</small></div><span>→</span></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section featured-section">
+        <div class="shell">
+          <div class="section-heading">
+            <div><p class="eyebrow">CURATOR'S PICK</p><h2>지금, 함께 읽고 싶은 책</h2><p>배움이 다음 행동으로 이어지는 책을 골랐어요.</p></div>
+            <a class="text-link" href="search.html">전체 도서 보기 <span>→</span></a>
+          </div>
+          <div class="book-grid featured-grid" id="featured-books" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="section category-section">
+        <div class="shell">
+          <div class="section-heading">
+            <div><p class="eyebrow">BROWSE BY INTEREST</p><h2>관심사로 가볍게 둘러보기</h2></div>
+          </div>
+          <div class="category-grid">
+            <a href="search.html?category=%EC%9E%90%EA%B8%B0%EA%B3%84%EB%B0%9C"><span>01</span><strong>자기계발</strong><small>매일 조금 더 나아지는 법</small></a>
+            <a href="search.html?category=%EC%A7%84%EB%A1%9C%2F%EC%B7%A8%EC%97%85"><span>02</span><strong>진로·취업</strong><small>나만의 다음 스텝 찾기</small></a>
+            <a href="search.html?category=%EC%86%8C%EC%84%A4"><span>03</span><strong>소설</strong><small>다른 삶을 건너보는 시간</small></a>
+            <a href="search.html?category=%EC%9D%B8%EB%AC%B8"><span>04</span><strong>인문</strong><small>생각의 뿌리를 깊게</small></a>
+            <a href="search.html?category=%EA%B2%BD%EC%A0%9C"><span>05</span><strong>경제</strong><small>세상의 흐름을 읽는 감각</small></a>
+            <a href="search.html?category=IT"><span>06</span><strong>IT</strong><small>기술을 내 것으로 만드는 법</small></a>
+            <a href="search.html?category=%EC%97%90%EC%84%B8%EC%9D%B4"><span>07</span><strong>에세이</strong><small>마음에 오래 남는 문장</small></a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section intro-section">
+        <div class="shell intro-panel">
+          <div><p class="eyebrow light">ABOUT BTL&amp;R</p><h2>책을 찾는 시간은 줄이고,<br />읽고 움직이는 시간은 늘리고.</h2></div>
+          <p>BOOK TO LEARN &amp; RUN은 공공 도서관 이용자가 원하는 책을 빠르게 찾고 대출 상태와 예약 가능 여부를 쉽게 확인하도록 돕는 모바일 중심 서비스입니다.</p>
+          <a class="button button-light" href="search.html">도서 둘러보기</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <div><strong>BOOK TO LEARN &amp; RUN</strong><p>도서 검색부터 예약까지, 일상 가까이의 공공 도서관.</p></div>
+        <p class="footer-note">본 서비스는 프론트엔드 MVP 시연용입니다.</p>
+      </div>
+    </footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

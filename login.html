@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BOOK TO LEARN & RUN 로그인" />
+    <title>로그인 | BOOK TO LEARN &amp; RUN</title>
+    <link rel="icon" href="image/logo.png" type="image/png" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="login">
+    <a class="skip-link" href="#main-content">본문 바로가기</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="index.html" aria-label="BOOK TO LEARN & RUN 홈"><span class="brand-mark" aria-hidden="true"><span></span></span><span class="brand-copy"><strong>BOOK TO LEARN &amp; RUN</strong><small>PUBLIC LIBRARY SERVICE</small></span></a>
+        <form class="header-search" role="search"><label class="sr-only" for="header-search-login">도서 검색</label><input id="header-search-login" name="q" type="search" placeholder="책 제목, 저자, 키워드 검색" /><button type="submit" aria-label="검색"><span aria-hidden="true">⌕</span><span class="search-text">검색</span></button></form>
+        <div class="auth-area" data-auth-area></div>
+      </div>
+      <nav class="main-nav" aria-label="주요 메뉴"><div class="nav-inner"><a href="index.html">홈</a><a href="search.html">도서검색</a><a href="mypage.html">마이페이지</a><span class="nav-message">읽고, 배우고, 오늘을 움직이세요.</span></div></nav>
+    </header>
+    <main id="main-content" class="page-main auth-main">
+      <section class="auth-card">
+        <div class="auth-intro"><p class="eyebrow light">WELCOME BACK</p><h1>다시 만나서<br />반가워요.</h1><p>로그인하고 나만의 독서 여정을 이어가세요.</p><div class="auth-quote">“한 권의 책은<br />한 번의 새로운 출발입니다.”</div></div>
+        <div class="auth-form-wrap">
+          <p class="eyebrow">MEMBER LOGIN</p><h2>로그인</h2><p>시연용 계정으로 서비스를 체험할 수 있어요.</p>
+          <form id="login-form" class="form-stack" novalidate>
+            <label for="login-email">이메일</label><input id="login-email" name="email" type="email" placeholder="example@email.com" autocomplete="email" required />
+            <label for="login-password">비밀번호</label><input id="login-password" name="password" type="password" placeholder="비밀번호 입력" autocomplete="current-password" required />
+            <p class="form-message" id="login-message" role="alert"></p>
+            <button class="button button-primary button-full" type="submit">로그인</button>
+          </form>
+          <p class="auth-switch">아직 회원이 아니신가요? <a href="signup.html">회원가입</a></p>
+          <p class="demo-notice">데모 안내: 입력 정보는 이 브라우저의 LocalStorage에만 저장됩니다.</p>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer"><div class="shell footer-inner"><div><strong>BOOK TO LEARN &amp; RUN</strong><p>도서 검색부터 예약까지, 일상 가까이의 공공 도서관.</p></div><p class="footer-note">본 서비스는 프론트엔드 MVP 시연용입니다.</p></div></footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="BOOK TO LEARN & RUN 도서 검색" />
+    <title>도서검색 | BOOK TO LEARN &amp; RUN</title>
+    <link rel="icon" href="image/logo.png" type="image/png" />
+    <link rel="stylesheet" href="style.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body data-page="search">
+    <a class="skip-link" href="#main-content">본문 바로가기</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="index.html" aria-label="BOOK TO LEARN & RUN 홈"><span class="brand-mark" aria-hidden="true"><span></span></span><span class="brand-copy"><strong>BOOK TO LEARN &amp; RUN</strong><small>PUBLIC LIBRARY SERVICE</small></span></a>
+        <form class="header-search" role="search"><label class="sr-only" for="header-search-search">도서 검색</label><input id="header-search-search" name="q" type="search" placeholder="책 제목, 저자, 키워드 검색" /><button type="submit" aria-label="검색"><span aria-hidden="true">⌕</span><span class="search-text">검색</span></button></form>
+        <div class="auth-area" data-auth-area></div>
+      </div>
+      <nav class="main-nav" aria-label="주요 메뉴"><div class="nav-inner"><a href="index.html">홈</a><a class="active" href="search.html">도서검색</a><a href="mypage.html">마이페이지</a><span class="nav-message">읽고, 배우고, 오늘을 움직이세요.</span></div></nav>
+    </header>
+
+    <main id="main-content" class="page-main">
+      <section class="page-hero">
+        <div class="shell"><p class="eyebrow">BOOK SEARCH</p><h1 id="search-title">도서 검색</h1><p>원하는 책의 위치와 대출 상태를 한눈에 확인하세요.</p></div>
+      </section>
+      <section class="shell search-layout">
+        <aside class="filter-panel" aria-label="검색 필터">
+          <div class="filter-header"><div><span>FILTER</span><strong>검색 조건</strong></div><button type="button" id="reset-filters">초기화</button></div>
+          <div class="filter-group">
+            <label for="category-filter">카테고리</label>
+            <select id="category-filter">
+              <option value="전체">전체</option><option value="소설">소설</option><option value="자기계발">자기계발</option><option value="진로/취업">진로/취업</option><option value="인문">인문</option><option value="경제">경제</option><option value="IT">IT</option><option value="에세이">에세이</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">대출 상태</span>
+            <div class="radio-list">
+              <label><input type="radio" name="loan-status" value="전체" checked /><span>전체</span></label>
+              <label><input type="radio" name="loan-status" value="대출 가능" /><span>대출 가능</span></label>
+              <label><input type="radio" name="loan-status" value="대출 중" /><span>대출 중</span></label>
+              <label><input type="radio" name="loan-status" value="예약 가능" /><span>예약 가능</span></label>
+            </div>
+          </div>
+        </aside>
+        <div class="results-panel">
+          <div class="results-toolbar">
+            <p><strong id="result-count">0</strong>권의 도서를 찾았어요</p>
+            <label for="sort-filter"><span class="sr-only">정렬</span><select id="sort-filter"><option value="default">기본순</option><option value="title">제목순</option><option value="latest">최신순</option><option value="available">대출 가능순</option></select></label>
+          </div>
+          <div class="active-query" id="active-query" hidden></div>
+          <div class="book-grid results-grid" id="search-results" aria-live="polite"></div>
+          <div class="empty-state" id="search-empty" hidden><span>⌕</span><h2>검색 결과가 없어요</h2><p>검색어나 필터를 바꿔 다시 찾아보세요.</p><button class="button button-secondary" type="button" id="empty-reset">전체 도서 보기</button></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer"><div class="shell footer-inner"><div><strong>BOOK TO LEARN &amp; RUN</strong><p>도서 검색부터 예약까지, 일상 가까이의 공공 도서관.</p></div><p class="footer-note">본 서비스는 프론트엔드 MVP 시연용입니다.</p></div></footer>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
