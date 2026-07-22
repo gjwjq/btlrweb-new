@@ -1984,6 +1984,17 @@ img {
   text-align: right;
 }
 
+.footer-note a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.footer-note a:hover,
+.footer-note a:focus-visible {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .toast {
   min-width: 220px;
   max-width: calc(100% - 32px);
