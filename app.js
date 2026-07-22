@@ -336,9 +336,11 @@ const mockBooks = [
 
 let toastTimer = null;
 let currentUserCache = null;
+let booksCache = mockBooks;
 
 async function initApp() {
   await loadCurrentUser();
+  await loadBooksFromSupabase();
   handleHeaderSearch();
   renderAuthArea();
   handleGlobalActions();
@@ -352,6 +354,7 @@ async function initApp() {
     signup: initSignupPage,
     login: initLoginPage,
     mypage: initMyPage,
+    admin: initAdminPage,
   };
 
   if (pageInitializers[page]) {
@@ -433,7 +436,7 @@ function getCurrentRelativeUrl() {
 function getSafeNextUrl() {
   const next = getQueryParam("next");
   if (!next) return "mypage.html";
-  return /^(index|search|detail|reserve|mypage)\.html(?:[?#].*)?$/.test(next)
+  return /^(index|search|detail|reserve|mypage|admin)\.html(?:[?#].*)?$/.test(next)
     ? next
     : "mypage.html";
 }
@@ -450,14 +453,64 @@ function getStatusClass(status) {
 }
 
 function getBooks() {
-  return mockBooks.map((book) => ({
+  return booksCache.map((book) => ({
     ...book,
     keywords: [...book.keywords],
   }));
 }
 
 function getBookById(bookId) {
-  return mockBooks.find((book) => book.id === bookId) || null;
+  return booksCache.find((book) => book.id === bookId) || null;
+}
+
+function mapDatabaseBook(book) {
+  return {
+    id: book.id,
+    title: book.title || "제목 없음",
+    author: book.author || "저자 미상",
+    publisher: book.publisher || "",
+    publishedDate: book.published_date || null,
+    isbn: book.isbn || "",
+    category: book.category || "기타",
+    keywords: Array.isArray(book.keywords) ? book.keywords : [],
+    description: book.description || "",
+    shortDescription: book.short_description || book.description || "",
+    thumbnail: book.thumbnail || "",
+    loanStatus: book.loan_status || "대출 가능",
+    location: book.location || "",
+    callNumber: book.call_number || "",
+    returnDate: book.return_date || null,
+    createdAt: book.created_at || new Date().toISOString(),
+  };
+}
+
+function serializeBookForDatabase(book) {
+  return {
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    publisher: book.publisher || null,
+    published_date: book.publishedDate || null,
+    isbn: book.isbn || null,
+    category: book.category || "기타",
+    keywords: book.keywords || [],
+    description: book.description || null,
+    short_description: book.shortDescription || null,
+    thumbnail: book.thumbnail || null,
+    loan_status: book.loanStatus || "대출 가능",
+    location: book.location || null,
+    call_number: book.callNumber || null,
+    return_date: book.returnDate || null,
+  };
+}
+
+async function loadBooksFromSupabase() {
+  if (!window.btlrSupabase) return;
+  const { data, error } = await window.btlrSupabase
+    .from("books")
+    .select("id, title, author, publisher, published_date, isbn, category, keywords, description, short_description, thumbnail, loan_status, location, call_number, return_date, created_at")
+    .order("created_at", { ascending: false });
+  if (!error && data?.length) booksCache = data.map(mapDatabaseBook);
 }
 
 function searchBooks(query, books) {
@@ -579,13 +632,22 @@ function getRecentSearches() {
 }
 
 async function signupUser(formData) {
-  const name = String(formData.name || "").trim();
+  const loginId = String(formData.loginId || "").trim().toLocaleLowerCase();
+  const name = String(formData.name || "").trim().replace(/\s+/g, " ");
   const email = String(formData.email || "").trim().toLocaleLowerCase();
   const password = String(formData.password || "");
-  const confirmPassword = String(formData.confirmPassword || "");
 
-  if (!name || !email || !password || !confirmPassword) {
+  if (!loginId || !name || !email || !password) {
     return { success: false, message: "모든 입력 항목을 작성해 주세요." };
+  }
+  if (!/^[a-z][a-z0-9_]{3,19}$/.test(loginId)) {
+    return {
+      success: false,
+      message: "아이디는 영문 소문자로 시작하고 영문·숫자·밑줄로 4~20자 입력해 주세요.",
+    };
+  }
+  if (name.length > 30) {
+    return { success: false, message: "이름은 30자 이하로 입력해 주세요." };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { success: false, message: "올바른 이메일 형식을 입력해 주세요." };
@@ -593,10 +655,6 @@ async function signupUser(formData) {
   if (password.length < 8) {
     return { success: false, message: "비밀번호는 8자 이상 입력해 주세요." };
   }
-  if (password !== confirmPassword) {
-    return { success: false, message: "비밀번호와 비밀번호 확인이 일치하지 않습니다." };
-  }
-
   if (!window.btlrSupabase) {
     return { success: false, message: "회원 서비스에 연결할 수 없습니다." };
   }
@@ -604,11 +662,15 @@ async function signupUser(formData) {
   const { data, error } = await window.btlrSupabase.auth.signUp({
     email,
     password,
-    options: { data: { name } },
+    options: { data: { login_id: loginId, name } },
   });
 
   if (error) {
-    return { success: false, message: error.message };
+    const normalizedError = error.message.toLocaleLowerCase();
+    const message = normalizedError.includes("duplicate") || normalizedError.includes("already")
+      ? "이미 사용 중인 아이디 또는 이메일입니다."
+      : error.message;
+    return { success: false, message };
   }
 
   return {
@@ -620,12 +682,12 @@ async function signupUser(formData) {
   };
 }
 
-async function loginUser(email, password) {
-  const normalizedEmail = String(email || "").trim().toLocaleLowerCase();
-  if (!normalizedEmail || !password) {
+async function loginUser(identifier, password) {
+  const normalizedIdentifier = String(identifier || "").trim().toLocaleLowerCase();
+  if (!normalizedIdentifier || !password) {
     return {
       success: false,
-      message: "이메일과 비밀번호를 입력해 주세요.",
+      message: "아이디 또는 이메일과 비밀번호를 입력해 주세요.",
     };
   }
 
@@ -633,8 +695,18 @@ async function loginUser(email, password) {
     return { success: false, message: "회원 서비스에 연결할 수 없습니다." };
   }
 
+  let loginEmail = normalizedIdentifier;
+  if (!normalizedIdentifier.includes("@")) {
+    const { data: resolvedEmail, error: resolveError } = await window.btlrSupabase
+      .rpc("resolve_login_email", { input_login_id: normalizedIdentifier });
+    if (resolveError || !resolvedEmail) {
+      return { success: false, message: "아이디 또는 비밀번호가 올바르지 않습니다." };
+    }
+    loginEmail = resolvedEmail;
+  }
+
   const { data, error } = await window.btlrSupabase.auth.signInWithPassword({
-    email: normalizedEmail,
+    email: loginEmail,
     password: String(password),
   });
 
@@ -643,7 +715,7 @@ async function loginUser(email, password) {
     const message = normalizedError.includes("email not confirmed")
       ? "이메일 인증을 완료한 후 로그인해 주세요."
       : normalizedError.includes("invalid login credentials")
-        ? "이메일 또는 비밀번호가 올바르지 않습니다."
+        ? "아이디·이메일 또는 비밀번호가 올바르지 않습니다."
         : "로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
     return {
       success: false,
@@ -684,7 +756,7 @@ async function loadCurrentUser(knownUser = null) {
 
   const { data: profile } = await window.btlrSupabase
     .from("profiles")
-    .select("id, name, username, role, created_at")
+    .select("id, name, login_id, role, created_at")
     .eq("id", authUser.id)
     .maybeSingle();
 
@@ -696,7 +768,7 @@ async function loadCurrentUser(knownUser = null) {
       authUser.user_metadata?.name ||
       authUser.email?.split("@")[0] ||
       "회원",
-    username: profile?.username || null,
+    loginId: profile?.login_id || authUser.user_metadata?.login_id || null,
     role: profile?.role || "member",
     createdAt: profile?.created_at || authUser.created_at,
   };
@@ -895,7 +967,11 @@ function renderAuthArea() {
   const user = getCurrentUser();
   document.querySelectorAll("[data-auth-area]").forEach((container) => {
     if (user) {
+      const adminLinks = user.role === "admin"
+        ? '<a class="admin-link" href="admin.html#users">유저 관리</a><a class="admin-link" href="admin.html#books">도서 관리</a>'
+        : "";
       container.innerHTML = `
+        ${adminLinks}
         <a class="user-link" href="mypage.html" title="${escapeHTML(user.email)}">${escapeHTML(user.name)}님</a>
         <button class="logout-button" type="button" data-action="logout">로그아웃</button>
       `;
@@ -978,7 +1054,7 @@ function initHomePage() {
   const availableCount = document.getElementById("available-count");
   if (availableCount) {
     availableCount.textContent = String(
-      mockBooks.filter((book) => book.loanStatus === "대출 가능").length,
+      getBooks().filter((book) => book.loanStatus === "대출 가능").length,
     );
   }
 
@@ -1300,7 +1376,7 @@ function initLoginPage() {
     if (submitButton) submitButton.disabled = true;
     const formData = new FormData(form);
     const result = await loginUser(
-      formData.get("email"),
+      formData.get("identifier"),
       formData.get("password"),
     );
     if (submitButton) submitButton.disabled = false;
@@ -1314,6 +1390,184 @@ function initLoginPage() {
       }, 450);
     }
   });
+}
+
+async function initAdminPage() {
+  const user = getCurrentUser();
+  const pageMessage = document.getElementById("admin-page-message");
+  const content = document.getElementById("admin-content");
+
+  if (!user) {
+    sessionStorage.setItem("btlr_login_notice", "관리자 로그인 후 이용할 수 있습니다.");
+    window.location.href = `login.html?next=${encodeURIComponent("admin.html")}`;
+    return;
+  }
+  if (user.role !== "admin") {
+    if (pageMessage) pageMessage.textContent = "관리자만 접근할 수 있는 페이지입니다.";
+    return;
+  }
+
+  if (content) content.hidden = false;
+  await seedDefaultBooksIfEmpty();
+  await Promise.all([renderAdminUsers(), renderAdminBooks()]);
+
+  document.getElementById("refresh-users")?.addEventListener("click", renderAdminUsers);
+  document.getElementById("cancel-book-edit")?.addEventListener("click", resetAdminBookForm);
+  document.getElementById("admin-book-form")?.addEventListener("submit", saveAdminBook);
+  document.getElementById("admin-user-list")?.addEventListener("click", changeAdminUserRole);
+  document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
+}
+
+async function seedDefaultBooksIfEmpty() {
+  if (!window.btlrSupabase) return;
+  const { count, error } = await window.btlrSupabase
+    .from("books")
+    .select("id", { count: "exact", head: true });
+  if (error || count !== 0) return;
+  await window.btlrSupabase.from("books").insert(mockBooks.map(serializeBookForDatabase));
+  await loadBooksFromSupabase();
+}
+
+async function renderAdminUsers() {
+  const target = document.getElementById("admin-user-list");
+  if (!target || !window.btlrSupabase) return;
+  target.innerHTML = '<tr><td colspan="7">불러오는 중...</td></tr>';
+  const { data, error } = await window.btlrSupabase.rpc("admin_list_users");
+  if (error) {
+    target.innerHTML = `<tr><td colspan="7">${escapeHTML(error.message)}</td></tr>`;
+    return;
+  }
+  if (!data?.length) {
+    target.innerHTML = '<tr><td colspan="7">가입한 회원이 없습니다.</td></tr>';
+    return;
+  }
+  const currentUser = getCurrentUser();
+  target.innerHTML = data.map((member) => `
+    <tr>
+      <td>${escapeHTML(member.login_id || "-")}</td>
+      <td>${escapeHTML(member.name || "-")}</td>
+      <td>${escapeHTML(member.email || "-")}</td>
+      <td><select data-role-select="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}><option value="member" ${member.role === "member" ? "selected" : ""}>회원</option><option value="admin" ${member.role === "admin" ? "selected" : ""}>관리자</option></select></td>
+      <td>${formatDate(member.created_at)}</td>
+      <td>${formatDate(member.last_sign_in_at)}</td>
+      <td><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>저장</button></td>
+    </tr>
+  `).join("");
+}
+
+async function changeAdminUserRole(event) {
+  const button = event.target.closest('[data-admin-action="save-role"]');
+  if (!button) return;
+  const userId = button.dataset.userId;
+  const select = document.querySelector(`[data-role-select="${CSS.escape(userId)}"]`);
+  button.disabled = true;
+  const { error } = await window.btlrSupabase.rpc("admin_set_user_role", {
+    target_user_id: userId,
+    next_role: select?.value,
+  });
+  button.disabled = false;
+  showToast(error ? error.message : "회원 권한을 변경했습니다.");
+  if (!error) await renderAdminUsers();
+}
+
+async function renderAdminBooks() {
+  await loadBooksFromSupabase();
+  const target = document.getElementById("admin-book-list");
+  if (!target) return;
+  const books = getBooks();
+  target.innerHTML = books.length ? books.map((book) => `
+    <article class="admin-book-row">
+      <img src="${escapeHTML(book.thumbnail)}" alt="" onerror="this.hidden=true" />
+      <div><strong>${escapeHTML(book.title)}</strong><span>${escapeHTML(book.author)} · ${escapeHTML(book.publisher)}</span><small>${escapeHTML(book.id)} · ${escapeHTML(book.category)} · ${escapeHTML(book.loanStatus)}</small></div>
+      <div class="admin-row-actions"><button type="button" data-admin-book-action="edit" data-book-id="${escapeHTML(book.id)}">수정</button><button type="button" data-admin-book-action="delete" data-book-id="${escapeHTML(book.id)}">삭제</button></div>
+    </article>
+  `).join("") : '<p class="admin-empty">등록된 도서가 없습니다.</p>';
+}
+
+function resetAdminBookForm() {
+  const form = document.getElementById("admin-book-form");
+  form?.reset();
+  if (form) form.elements.originalId.value = "";
+}
+
+function fillAdminBookForm(book) {
+  const form = document.getElementById("admin-book-form");
+  if (!form) return;
+  form.elements.originalId.value = book.id;
+  form.elements.id.value = book.id;
+  form.elements.title.value = book.title;
+  form.elements.author.value = book.author;
+  form.elements.publisher.value = book.publisher || "";
+  form.elements.publishedDate.value = book.publishedDate || "";
+  form.elements.isbn.value = book.isbn || "";
+  form.elements.category.value = book.category || "";
+  form.elements.loanStatus.value = book.loanStatus || "대출 가능";
+  form.elements.location.value = book.location || "";
+  form.elements.callNumber.value = book.callNumber || "";
+  form.elements.thumbnail.value = book.thumbnail || "";
+  form.elements.keywords.value = (book.keywords || []).join(", ");
+  form.elements.shortDescription.value = book.shortDescription || "";
+  form.elements.description.value = book.description || "";
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function saveAdminBook(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = document.getElementById("admin-book-message");
+  const values = Object.fromEntries(new FormData(form).entries());
+  const book = {
+    id: String(values.id || "").trim() || `book-${Date.now()}`,
+    title: String(values.title || "").trim(),
+    author: String(values.author || "").trim(),
+    publisher: String(values.publisher || "").trim(),
+    publishedDate: values.publishedDate || null,
+    isbn: String(values.isbn || "").trim(),
+    category: String(values.category || "기타").trim(),
+    keywords: String(values.keywords || "").split(",").map((item) => item.trim()).filter(Boolean),
+    description: String(values.description || "").trim(),
+    shortDescription: String(values.shortDescription || "").trim(),
+    thumbnail: String(values.thumbnail || "").trim(),
+    loanStatus: values.loanStatus || "대출 가능",
+    location: String(values.location || "").trim(),
+    callNumber: String(values.callNumber || "").trim(),
+  };
+  if (!book.title || !book.author) {
+    if (message) message.textContent = "제목과 저자를 입력해 주세요.";
+    return;
+  }
+  const payload = serializeBookForDatabase(book);
+  const originalId = String(values.originalId || "");
+  const query = originalId
+    ? window.btlrSupabase.from("books").update(payload).eq("id", originalId)
+    : window.btlrSupabase.from("books").insert(payload);
+  const { error } = await query;
+  if (message) {
+    message.textContent = error ? error.message : originalId ? "도서 정보를 수정했습니다." : "도서를 추가했습니다.";
+    message.classList.toggle("success", !error);
+  }
+  if (!error) {
+    resetAdminBookForm();
+    await renderAdminBooks();
+  }
+}
+
+async function handleAdminBookAction(event) {
+  const button = event.target.closest("[data-admin-book-action]");
+  if (!button) return;
+  const book = getBookById(button.dataset.bookId);
+  if (!book) return;
+  if (button.dataset.adminBookAction === "edit") {
+    fillAdminBookForm(book);
+    return;
+  }
+  if (!window.confirm(`'${book.title}' 도서를 삭제할까요?`)) return;
+  const { error } = await window.btlrSupabase.from("books").delete().eq("id", book.id);
+  showToast(error ? error.message : "도서를 삭제했습니다.");
+  if (!error) {
+    booksCache = booksCache.filter((item) => item.id !== book.id);
+    await renderAdminBooks();
+  }
 }
 
 function initMyPage() {
