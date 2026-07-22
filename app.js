@@ -1221,10 +1221,7 @@ function initDetailPage() {
         <dl class="detail-meta">
           <div><dt>출판사</dt><dd>${escapeHTML(book.publisher)}</dd></div>
           <div><dt>출판일</dt><dd>${formatDate(book.publishedDate)}</dd></div>
-          <div><dt>ISBN</dt><dd>${escapeHTML(book.isbn)}</dd></div>
           <div><dt>카테고리</dt><dd>${escapeHTML(book.category)}</dd></div>
-          <div><dt>자료실 위치</dt><dd>${escapeHTML(book.location)}</dd></div>
-          <div><dt>청구기호</dt><dd>${escapeHTML(book.callNumber)}</dd></div>
         </dl>
         ${book.returnDate ? `<p class="return-notice">예상 반납일 ${formatDate(book.returnDate)} · 반납 후 순차적으로 이용할 수 있습니다.</p>` : ""}
         <div class="detail-actions">
@@ -1283,8 +1280,6 @@ function initReservePage() {
           </div>
         </div>
         <dl class="reserve-info-list">
-          <div><dt>자료실</dt><dd>${escapeHTML(book.location)}</dd></div>
-          <div><dt>청구기호</dt><dd>${escapeHTML(book.callNumber)}</dd></div>
           <div><dt>예상 반납일</dt><dd>${book.returnDate ? formatDate(book.returnDate) : "현재 대출 가능"}</dd></div>
         </dl>
       </article>
@@ -1432,6 +1427,7 @@ async function initAdminPage() {
   document.getElementById("cancel-book-edit")?.addEventListener("click", closeAdminBookDialog);
   document.getElementById("admin-user-list")?.addEventListener("click", handleAdminUserAction);
   document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
+  document.querySelectorAll("#admin-book-form, #admin-book-edit-form").forEach(bindBookFormEnhancements);
 }
 
 async function seedDefaultBooksIfEmpty() {
@@ -1528,7 +1524,11 @@ async function renderAdminBooks() {
 function resetAdminBookForm() {
   const form = document.getElementById("admin-book-form");
   form?.reset();
-  if (form) form.elements.originalId.value = "";
+  if (form) {
+    form.elements.originalId.value = "";
+    form.elements.thumbnail.value = "";
+    renderBookCoverPreview(form, "");
+  }
 }
 
 function fillAdminBookForm(book, form) {
@@ -1539,15 +1539,126 @@ function fillAdminBookForm(book, form) {
   form.elements.author.value = book.author;
   form.elements.publisher.value = book.publisher || "";
   form.elements.publishedDate.value = book.publishedDate || "";
-  form.elements.isbn.value = book.isbn || "";
   form.elements.category.value = book.category || "";
   form.elements.loanStatus.value = book.loanStatus || "대출 가능";
-  form.elements.location.value = book.location || "";
-  form.elements.callNumber.value = book.callNumber || "";
   form.elements.thumbnail.value = book.thumbnail || "";
   form.elements.keywords.value = (book.keywords || []).join(", ");
   form.elements.shortDescription.value = book.shortDescription || "";
   form.elements.description.value = book.description || "";
+  form.elements.coverFile.value = "";
+  renderBookCoverPreview(form, book.thumbnail || "");
+}
+
+function bindBookFormEnhancements(form) {
+  const fileInput = form.elements.coverFile;
+  fileInput?.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (!file) {
+      renderBookCoverPreview(form, form.elements.thumbnail.value);
+      return;
+    }
+    renderBookCoverPreview(form, URL.createObjectURL(file));
+  });
+  form.querySelector("[data-ai-fill]")?.addEventListener("click", async (event) => {
+    const button = event.currentTarget;
+    button.disabled = true;
+    const result = await fillBookMetadataWithAI(form);
+    button.disabled = false;
+    showBookFormMessage(form, result.message, result.success);
+  });
+}
+
+function renderBookCoverPreview(form, imageUrl) {
+  const preview = form.querySelector("[data-cover-preview]");
+  if (!preview) return;
+  preview.innerHTML = imageUrl
+    ? `<img src="${escapeHTML(imageUrl)}" alt="선택한 도서 표지 미리보기" />`
+    : "<span>선택한 이미지 미리보기</span>";
+}
+
+function showBookFormMessage(form, messageText, success = false) {
+  const isEdit = form.id === "admin-book-edit-form";
+  const message = document.getElementById(isEdit ? "admin-book-edit-message" : "admin-book-message");
+  if (!message) return;
+  message.textContent = messageText || "";
+  message.classList.toggle("success", success);
+}
+
+function needsBookMetadata(form) {
+  return ["category", "keywords", "shortDescription", "description"]
+    .some((name) => !String(form.elements[name]?.value || "").trim());
+}
+
+async function fillBookMetadataWithAI(form) {
+  const values = Object.fromEntries(new FormData(form).entries());
+  const title = String(values.title || "").trim();
+  const author = String(values.author || "").trim();
+  if (!title || !author) {
+    return { success: false, message: "AI 자동 입력 전에 제목과 저자를 입력해 주세요." };
+  }
+
+  const { data: sessionData } = await window.btlrSupabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) return { success: false, message: "관리자 로그인이 필요합니다." };
+
+  try {
+    const response = await fetch("/api/generate-book-metadata", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        title,
+        author,
+        publisher: String(values.publisher || "").trim(),
+        publishedDate: values.publishedDate || "",
+        category: String(values.category || "").trim(),
+      }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "AI 자동 입력에 실패했습니다.");
+
+    const fieldMap = {
+      author: result.author,
+      publisher: result.publisher,
+      publishedDate: result.publishedDate,
+      category: result.category,
+      keywords: Array.isArray(result.keywords) ? result.keywords.join(", ") : result.keywords,
+      shortDescription: result.shortDescription,
+      description: result.description,
+    };
+    Object.entries(fieldMap).forEach(([name, value]) => {
+      const field = form.elements[name];
+      if (field && !String(field.value || "").trim() && value) field.value = value;
+    });
+    form.querySelector(".admin-auto-fields")?.setAttribute("open", "");
+    return { success: true, message: "AI가 빈 도서 정보를 채웠습니다. 저장 전에 확인해 주세요." };
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
+async function uploadBookCover(form, bookId) {
+  const file = form.elements.coverFile?.files?.[0];
+  if (!file) return { url: String(form.elements.thumbnail.value || "") };
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!allowedTypes.includes(file.type)) {
+    return { error: "표지 이미지는 JPG, JPEG, PNG, WEBP 파일만 사용할 수 있습니다." };
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: "표지 이미지는 5MB 이하로 선택해 주세요." };
+  }
+
+  const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const fileName = `${Date.now()}-${window.crypto.randomUUID()}.${extension}`;
+  const filePath = `${bookId}/${fileName}`;
+  const { error } = await window.btlrSupabase.storage
+    .from("book-covers")
+    .upload(filePath, file, { contentType: file.type, upsert: false });
+  if (error) return { error: error.message };
+  const { data } = window.btlrSupabase.storage.from("book-covers").getPublicUrl(filePath);
+  return { url: data.publicUrl };
 }
 
 function openAdminBookDialog(book) {
@@ -1571,38 +1682,55 @@ async function saveAdminBook(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const isEdit = form.id === "admin-book-edit-form";
-  const message = document.getElementById(isEdit ? "admin-book-edit-message" : "admin-book-message");
-  const values = Object.fromEntries(new FormData(form).entries());
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+  let values = Object.fromEntries(new FormData(form).entries());
+  if (!String(values.title || "").trim() || !String(values.author || "").trim()) {
+    showBookFormMessage(form, "제목과 저자를 입력해 주세요.");
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
+  if (needsBookMetadata(form)) {
+    showBookFormMessage(form, "AI가 빈 도서 정보를 작성하고 있습니다...");
+    const aiResult = await fillBookMetadataWithAI(form);
+    if (!aiResult.success) {
+      showBookFormMessage(form, aiResult.message);
+      if (submitButton) submitButton.disabled = false;
+      return;
+    }
+    values = Object.fromEntries(new FormData(form).entries());
+  }
+  const generatedId = String(values.id || "").trim() || `book-${Date.now()}`;
+  const coverResult = await uploadBookCover(form, generatedId);
+  if (coverResult.error) {
+    showBookFormMessage(form, coverResult.error);
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
   const book = {
-    id: String(values.id || "").trim() || `book-${Date.now()}`,
+    id: generatedId,
     title: String(values.title || "").trim(),
     author: String(values.author || "").trim(),
     publisher: String(values.publisher || "").trim(),
     publishedDate: values.publishedDate || null,
-    isbn: String(values.isbn || "").trim(),
+    isbn: "",
     category: String(values.category || "기타").trim(),
     keywords: String(values.keywords || "").split(",").map((item) => item.trim()).filter(Boolean),
     description: String(values.description || "").trim(),
     shortDescription: String(values.shortDescription || "").trim(),
-    thumbnail: String(values.thumbnail || "").trim(),
+    thumbnail: coverResult.url,
     loanStatus: values.loanStatus || "대출 가능",
-    location: String(values.location || "").trim(),
-    callNumber: String(values.callNumber || "").trim(),
+    location: "",
+    callNumber: "",
   };
-  if (!book.title || !book.author) {
-    if (message) message.textContent = "제목과 저자를 입력해 주세요.";
-    return;
-  }
   const payload = serializeBookForDatabase(book);
   const originalId = isEdit ? String(values.originalId || "") : "";
   const query = isEdit
     ? window.btlrSupabase.from("books").update(payload).eq("id", originalId)
     : window.btlrSupabase.from("books").insert(payload);
   const { error } = await query;
-  if (message) {
-    message.textContent = error ? error.message : isEdit ? "도서 정보를 수정했습니다." : "도서를 추가했습니다.";
-    message.classList.toggle("success", !error);
-  }
+  if (submitButton) submitButton.disabled = false;
+  showBookFormMessage(form, error ? error.message : isEdit ? "도서 정보를 수정했습니다." : "도서를 추가했습니다.", !error);
   if (!error) {
     if (isEdit) closeAdminBookDialog();
     else resetAdminBookForm();
@@ -1798,7 +1926,7 @@ function renderMyList(containerId, records, type, emptyTitle, emptyText) {
             <span class="status-badge ${config.statusClass}">${escapeHTML(config.status)}</span>
             <h3>${escapeHTML(book.title)}</h3>
             <p>${escapeHTML(book.author)} · ${escapeHTML(book.publisher)}</p>
-            <div class="my-book-meta"><span>${escapeHTML(book.location)}</span><span>${config.dateLabel} ${formatDate(config.date)}</span></div>
+            <div class="my-book-meta"><span>${config.dateLabel} ${formatDate(config.date)}</span></div>
           </div>
           <div class="my-book-actions">
             <a href="detail.html?id=${encodeURIComponent(book.id)}">상세 보기</a>

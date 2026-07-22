@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="BOOK TO LEARN & RUN 관리자" />
+    <meta name="description" content="BOOK TO LEARN &amp; RUN 관리자" />
     <title>관리자 | BOOK TO LEARN &amp; RUN</title>
     <link rel="icon" href="image/logo.png" type="image/png" />
     <link rel="stylesheet" href="style.css" />
@@ -16,7 +16,7 @@
     <a class="skip-link" href="#main-content">본문 바로가기</a>
     <header class="site-header">
       <div class="header-inner">
-        <a class="brand" href="index.html" aria-label="BOOK TO LEARN & RUN 홈"><span class="brand-mark" aria-hidden="true"><span></span></span><span class="brand-copy"><strong>BOOK TO LEARN &amp; RUN</strong><small>PUBLIC LIBRARY SERVICE</small></span></a>
+        <a class="brand" href="index.html" aria-label="BOOK TO LEARN &amp; RUN 홈"><span class="brand-mark" aria-hidden="true"><span></span></span><span class="brand-copy"><strong>BOOK TO LEARN &amp; RUN</strong><small>PUBLIC LIBRARY SERVICE</small></span></a>
         <form class="header-search" role="search"><label class="sr-only" for="header-search-admin">도서 검색</label><input id="header-search-admin" name="q" type="search" placeholder="책 제목, 저자, 키워드 검색" /><button type="submit" aria-label="검색"><span aria-hidden="true">⌕</span><span class="search-text">검색</span></button></form>
         <div class="auth-area" data-auth-area></div>
       </div>
@@ -35,20 +35,21 @@
             <div class="admin-panel-heading"><div><p class="eyebrow">COLLECTION</p><h2>도서 관리</h2></div></div>
             <form id="admin-book-form" class="admin-book-form">
               <input type="hidden" name="originalId" />
-              <div><label for="admin-book-id">도서 ID</label><input id="admin-book-id" name="id" type="text" placeholder="비워두면 자동 생성" /></div>
+              <input name="id" type="hidden" />
+              <input name="thumbnail" type="hidden" />
               <div><label for="admin-book-title">제목</label><input id="admin-book-title" name="title" type="text" required /></div>
               <div><label for="admin-book-author">저자</label><input id="admin-book-author" name="author" type="text" required /></div>
               <div><label for="admin-book-publisher">출판사</label><input id="admin-book-publisher" name="publisher" type="text" /></div>
               <div><label for="admin-book-date">출판일</label><input id="admin-book-date" name="publishedDate" type="date" /></div>
-              <div><label for="admin-book-isbn">ISBN</label><input id="admin-book-isbn" name="isbn" type="text" /></div>
-              <div><label for="admin-book-category">카테고리</label><input id="admin-book-category" name="category" type="text" required /></div>
-              <div><label for="admin-book-status">대출 상태</label><select id="admin-book-status" name="loanStatus"><option>대출 가능</option><option>대출 중</option><option>예약 가능</option></select></div>
-              <div><label for="admin-book-location">위치</label><input id="admin-book-location" name="location" type="text" /></div>
-              <div><label for="admin-book-call">청구기호</label><input id="admin-book-call" name="callNumber" type="text" /></div>
-              <div><label for="admin-book-thumbnail">표지 이미지 경로</label><input id="admin-book-thumbnail" name="thumbnail" type="text" /></div>
-              <div><label for="admin-book-keywords">키워드</label><input id="admin-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
-              <div class="admin-form-wide"><label for="admin-book-short">짧은 소개</label><input id="admin-book-short" name="shortDescription" type="text" /></div>
-              <div class="admin-form-wide"><label for="admin-book-description">상세 설명</label><textarea id="admin-book-description" name="description" rows="4"></textarea></div>
+              <div><label for="admin-book-category">카테고리</label><input id="admin-book-category" name="category" type="text" placeholder="비우면 AI가 작성" /></div>
+              <div class="admin-form-wide cover-picker"><label for="admin-book-cover">표지 이미지</label><input id="admin-book-cover" name="coverFile" type="file" accept="image/jpeg,image/png,image/webp" required /><div class="cover-preview" data-cover-preview><span>선택한 이미지 미리보기</span></div></div>
+              <div class="admin-form-wide ai-fill-row"><button class="button button-secondary" type="button" data-ai-fill>AI로 나머지 정보 자동 채우기</button><small>제목과 저자만 입력해도 카테고리, 키워드, 소개와 설명을 작성합니다.</small></div>
+              <details class="admin-auto-fields admin-form-wide"><summary>자동 입력 정보 확인·수정</summary><div class="admin-auto-grid">
+                <div><label for="admin-book-keywords">키워드</label><input id="admin-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
+                <div><label for="admin-book-status">대출 상태</label><select id="admin-book-status" name="loanStatus"><option>대출 가능</option><option>대출 중</option><option>예약 가능</option></select></div>
+                <div class="admin-form-wide"><label for="admin-book-short">짧은 소개</label><input id="admin-book-short" name="shortDescription" type="text" /></div>
+                <div class="admin-form-wide"><label for="admin-book-description">상세 설명</label><textarea id="admin-book-description" name="description" rows="4"></textarea></div>
+              </div></details>
               <div class="admin-form-actions"><button class="button button-primary" type="submit">도서 추가</button><button id="reset-book-create" class="button button-secondary" type="button">입력 초기화</button></div>
               <p id="admin-book-message" class="form-message admin-form-wide" role="alert"></p>
             </form>
@@ -61,20 +62,21 @@
       <div class="admin-dialog-heading"><div><p class="eyebrow">EDIT BOOK</p><h2>도서 정보 수정</h2></div><button id="close-book-edit" class="dialog-close" type="button" aria-label="닫기">×</button></div>
       <form id="admin-book-edit-form" class="admin-book-form">
         <input type="hidden" name="originalId" />
-        <div><label for="edit-book-id">도서 ID</label><input id="edit-book-id" name="id" type="text" required /></div>
+        <input name="id" type="hidden" />
+        <input name="thumbnail" type="hidden" />
         <div><label for="edit-book-title">제목</label><input id="edit-book-title" name="title" type="text" required /></div>
         <div><label for="edit-book-author">저자</label><input id="edit-book-author" name="author" type="text" required /></div>
         <div><label for="edit-book-publisher">출판사</label><input id="edit-book-publisher" name="publisher" type="text" /></div>
         <div><label for="edit-book-date">출판일</label><input id="edit-book-date" name="publishedDate" type="date" /></div>
-        <div><label for="edit-book-isbn">ISBN</label><input id="edit-book-isbn" name="isbn" type="text" /></div>
-        <div><label for="edit-book-category">카테고리</label><input id="edit-book-category" name="category" type="text" required /></div>
-        <div><label for="edit-book-status">대출 상태</label><select id="edit-book-status" name="loanStatus"><option>대출 가능</option><option>대출 중</option><option>예약 가능</option></select></div>
-        <div><label for="edit-book-location">위치</label><input id="edit-book-location" name="location" type="text" /></div>
-        <div><label for="edit-book-call">청구기호</label><input id="edit-book-call" name="callNumber" type="text" /></div>
-        <div><label for="edit-book-thumbnail">표지 이미지 경로</label><input id="edit-book-thumbnail" name="thumbnail" type="text" /></div>
-        <div><label for="edit-book-keywords">키워드</label><input id="edit-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
-        <div class="admin-form-wide"><label for="edit-book-short">짧은 소개</label><input id="edit-book-short" name="shortDescription" type="text" /></div>
-        <div class="admin-form-wide"><label for="edit-book-description">상세 설명</label><textarea id="edit-book-description" name="description" rows="4"></textarea></div>
+        <div><label for="edit-book-category">카테고리</label><input id="edit-book-category" name="category" type="text" placeholder="비우면 AI가 작성" /></div>
+        <div class="admin-form-wide cover-picker"><label for="edit-book-cover">표지 이미지</label><input id="edit-book-cover" name="coverFile" type="file" accept="image/jpeg,image/png,image/webp" /><div class="cover-preview" data-cover-preview><span>현재 표지</span></div></div>
+        <div class="admin-form-wide ai-fill-row"><button class="button button-secondary" type="button" data-ai-fill>AI로 빈 정보 자동 채우기</button><small>현재 작성된 내용은 유지하고 비어 있는 항목만 채웁니다.</small></div>
+        <details class="admin-auto-fields admin-form-wide"><summary>자동 입력 정보 확인·수정</summary><div class="admin-auto-grid">
+          <div><label for="edit-book-keywords">키워드</label><input id="edit-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
+          <div><label for="edit-book-status">대출 상태</label><select id="edit-book-status" name="loanStatus"><option>대출 가능</option><option>대출 중</option><option>예약 가능</option></select></div>
+          <div class="admin-form-wide"><label for="edit-book-short">짧은 소개</label><input id="edit-book-short" name="shortDescription" type="text" /></div>
+          <div class="admin-form-wide"><label for="edit-book-description">상세 설명</label><textarea id="edit-book-description" name="description" rows="4"></textarea></div>
+        </div></details>
         <div class="admin-form-actions"><button class="button button-primary" type="submit">저장</button><button id="cancel-book-edit" class="button button-secondary" type="button">취소</button></div>
         <p id="admin-book-edit-message" class="form-message admin-form-wide" role="alert"></p>
       </form>
