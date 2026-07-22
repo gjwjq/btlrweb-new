@@ -1596,7 +1596,7 @@ img {
   font-size: 2rem;
 }
 
-.auth-form-wrap > p:not(.eyebrow):not(.auth-switch):not(.demo-notice) {
+.auth-form-wrap > p:not(.eyebrow):not(.auth-switch) {
   margin-top: 4px;
   color: var(--muted);
   font-size: 0.78rem;
@@ -1666,16 +1666,6 @@ img {
   font-weight: 800;
   text-decoration: underline;
   text-underline-offset: 3px;
-}
-
-.demo-notice {
-  margin-top: 18px;
-  padding: 10px 12px;
-  color: #8a7567;
-  background: var(--cream);
-  border-radius: 9px;
-  font-size: 0.65rem;
-  text-align: center;
 }
 
 /* My page */

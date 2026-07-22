@@ -1162,9 +1162,9 @@ function initReservePage() {
         <p class="eyebrow">BEFORE RESERVATION</p>
         <h2>예약 전 확인해 주세요</h2>
         <ul>
-          <li>이 MVP의 예약은 브라우저에 시연 데이터로 저장됩니다.</li>
           <li>같은 도서는 한 번만 예약할 수 있습니다.</li>
-          <li>도서가 반납되면 실제 서비스에서는 알림 기능이 연결될 예정입니다.</li>
+          <li>대출 가능한 도서는 예약할 수 없습니다.</li>
+          <li>예약 도서는 반납 순서와 예약 순번에 따라 이용할 수 있습니다.</li>
           <li>예약 현황과 취소는 마이페이지에서 관리할 수 있습니다.</li>
         </ul>
         ${
@@ -1278,7 +1278,7 @@ function initMyPage() {
       <div class="user-card">
         <div class="user-avatar">${escapeHTML(user.name.slice(0, 1).toUpperCase())}</div>
         <div><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.email)}</span></div>
-        <small>가입일 ${formatDate(userRecord?.createdAt || new Date())} · 프론트엔드 MVP 회원</small>
+        <small>가입일 ${formatDate(userRecord?.createdAt || new Date())} · 도서관 회원</small>
       </div>
     `;
   }
