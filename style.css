@@ -2635,6 +2635,54 @@ img {
   color: #a22424;
 }
 
+.admin-borrow-blocked {
+  cursor: default;
+  opacity: 0.72;
+  text-align: center;
+}
+
+.admin-dialog {
+  width: min(1040px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  padding: 28px;
+  border: 0;
+  border-radius: 18px;
+  color: inherit;
+  background: #fff;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 28%);
+}
+
+.admin-dialog::backdrop {
+  background: rgb(20 18 15 / 62%);
+  backdrop-filter: blur(3px);
+}
+
+.admin-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.admin-dialog-heading h2 {
+  margin-top: 4px;
+}
+
+.dialog-close {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #d6dad4;
+  border-radius: 50%;
+  background: #fff;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.admin-dialog .admin-book-form {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
+
 .admin-book-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

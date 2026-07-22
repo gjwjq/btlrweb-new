@@ -49,7 +49,7 @@
               <div><label for="admin-book-keywords">키워드</label><input id="admin-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
               <div class="admin-form-wide"><label for="admin-book-short">짧은 소개</label><input id="admin-book-short" name="shortDescription" type="text" /></div>
               <div class="admin-form-wide"><label for="admin-book-description">상세 설명</label><textarea id="admin-book-description" name="description" rows="4"></textarea></div>
-              <div class="admin-form-actions"><button class="button button-primary" type="submit">도서 저장</button><button id="cancel-book-edit" class="button button-secondary" type="button">입력 초기화</button></div>
+              <div class="admin-form-actions"><button class="button button-primary" type="submit">도서 추가</button><button id="reset-book-create" class="button button-secondary" type="button">입력 초기화</button></div>
               <p id="admin-book-message" class="form-message admin-form-wide" role="alert"></p>
             </form>
             <div id="admin-book-list" class="admin-book-list"></div>
@@ -57,6 +57,28 @@
         </div>
       </div>
     </main>
+    <dialog id="book-edit-dialog" class="admin-dialog">
+      <div class="admin-dialog-heading"><div><p class="eyebrow">EDIT BOOK</p><h2>도서 정보 수정</h2></div><button id="close-book-edit" class="dialog-close" type="button" aria-label="닫기">×</button></div>
+      <form id="admin-book-edit-form" class="admin-book-form">
+        <input type="hidden" name="originalId" />
+        <div><label for="edit-book-id">도서 ID</label><input id="edit-book-id" name="id" type="text" required /></div>
+        <div><label for="edit-book-title">제목</label><input id="edit-book-title" name="title" type="text" required /></div>
+        <div><label for="edit-book-author">저자</label><input id="edit-book-author" name="author" type="text" required /></div>
+        <div><label for="edit-book-publisher">출판사</label><input id="edit-book-publisher" name="publisher" type="text" /></div>
+        <div><label for="edit-book-date">출판일</label><input id="edit-book-date" name="publishedDate" type="date" /></div>
+        <div><label for="edit-book-isbn">ISBN</label><input id="edit-book-isbn" name="isbn" type="text" /></div>
+        <div><label for="edit-book-category">카테고리</label><input id="edit-book-category" name="category" type="text" required /></div>
+        <div><label for="edit-book-status">대출 상태</label><select id="edit-book-status" name="loanStatus"><option>대출 가능</option><option>대출 중</option><option>예약 가능</option></select></div>
+        <div><label for="edit-book-location">위치</label><input id="edit-book-location" name="location" type="text" /></div>
+        <div><label for="edit-book-call">청구기호</label><input id="edit-book-call" name="callNumber" type="text" /></div>
+        <div><label for="edit-book-thumbnail">표지 이미지 경로</label><input id="edit-book-thumbnail" name="thumbnail" type="text" /></div>
+        <div><label for="edit-book-keywords">키워드</label><input id="edit-book-keywords" name="keywords" type="text" placeholder="쉼표로 구분" /></div>
+        <div class="admin-form-wide"><label for="edit-book-short">짧은 소개</label><input id="edit-book-short" name="shortDescription" type="text" /></div>
+        <div class="admin-form-wide"><label for="edit-book-description">상세 설명</label><textarea id="edit-book-description" name="description" rows="4"></textarea></div>
+        <div class="admin-form-actions"><button class="button button-primary" type="submit">저장</button><button id="cancel-book-edit" class="button button-secondary" type="button">취소</button></div>
+        <p id="admin-book-edit-message" class="form-message admin-form-wide" role="alert"></p>
+      </form>
+    </dialog>
     <footer class="site-footer"><div class="shell footer-inner"><div><strong>BOOK TO LEARN &amp; RUN</strong><p>도서 검색부터 예약까지, 일상 가까이의 공공 도서관.</p></div><div class="footer-note"><p>사업자 : Book To Run&amp;Learn</p><p>전화번호 : <a href="tel:010-6314-1491">010-6314-1491</a></p></div></div></footer>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </body>

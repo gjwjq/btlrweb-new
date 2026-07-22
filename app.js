@@ -38,10 +38,10 @@ const mockBooks = [
     description: "보고서와 자기소개서, 이메일처럼 실무에서 자주 쓰는 문장을 더 명확하고 설득력 있게 다듬는 방법을 알려줍니다. 사례를 통해 바로 적용할 수 있는 글쓰기 원칙을 배울 수 있습니다.",
     shortDescription: "실무 문장을 짧고 정확하게 만드는 보고서 글쓰기 안내서.",
     thumbnail: "image/images/images (9).jpg",
-    loanStatus: "대출 중",
+    loanStatus: "대출 가능",
     location: "종합자료실 2층",
     callNumber: "802-이667ㅈ",
-    returnDate: "2026-06-29",
+    returnDate: null,
     createdAt: "2025-06-02",
   },
   {
@@ -74,10 +74,10 @@ const mockBooks = [
     description: "읽기 쉽고 유지보수하기 좋은 코드를 만들기 위한 실용적인 원칙을 담았습니다. 이름 짓기, 함수 설계, 오류 처리, 테스트 등 개발 현장에서 반복해서 마주치는 문제를 구체적으로 설명합니다.",
     shortDescription: "현장에서 오래 살아남는 코드를 위한 실전 원칙.",
     thumbnail: "image/images/images (11).jpg",
-    loanStatus: "예약 가능",
+    loanStatus: "대출 가능",
     location: "디지털자료실 3층",
     callNumber: "005.12-앨756ㅋ",
-    returnDate: "2026-07-03",
+    returnDate: null,
     createdAt: "2025-06-11",
   },
   {
@@ -92,10 +92,10 @@ const mockBooks = [
     description: "반복적인 네트워크 운영을 코드로 자동화하는 방법과 실무 도구를 소개합니다. 네트워크 엔지니어와 개발자가 함께 이해할 수 있도록 개념부터 운영 사례까지 폭넓게 다룹니다.",
     shortDescription: "코드로 더 빠르고 안전하게 운영하는 네트워크 인프라.",
     thumbnail: "image/images/images (12).jpg",
-    loanStatus: "대출 중",
+    loanStatus: "대출 가능",
     location: "디지털자료실 3층",
     callNumber: "004.5-오585ㄴ",
-    returnDate: "2026-06-25",
+    returnDate: null,
     createdAt: "2025-04-08",
   },
   {
@@ -128,10 +128,10 @@ const mockBooks = [
     description: "현대 자바스크립트와 리액트 애플리케이션에서 재사용 가능한 구조를 만드는 디자인 패턴을 설명합니다. 성능과 유지보수성을 함께 고려하는 프론트엔드 설계를 배울 수 있습니다.",
     shortDescription: "확장 가능한 프론트엔드를 위한 현대적 디자인 패턴.",
     thumbnail: "image/images/images (14).jpg",
-    loanStatus: "예약 가능",
+    loanStatus: "대출 가능",
     location: "디지털자료실 3층",
     callNumber: "005.138-오585ㅈ",
-    returnDate: "2026-07-01",
+    returnDate: null,
     createdAt: "2025-05-21",
   },
   {
@@ -164,10 +164,10 @@ const mockBooks = [
     description: "사람과 동네, 신뢰를 연결하는 로컬 플랫폼의 성장 방식을 바탕으로 오늘날의 마케팅 전략을 살펴봅니다. 고객과 오래 관계 맺는 브랜드의 원칙을 쉽게 설명합니다.",
     shortDescription: "사람과 지역을 연결해 성장하는 마케팅의 원리.",
     thumbnail: "image/images/images (16).jpg",
-    loanStatus: "대출 중",
+    loanStatus: "대출 가능",
     location: "인문·사회자료실 2층",
     callNumber: "325.5-김698ㄷ",
-    returnDate: "2026-06-28",
+    returnDate: null,
     createdAt: "2025-02-15",
   },
   {
@@ -200,10 +200,10 @@ const mockBooks = [
     description: "타입 시스템의 기본부터 제네릭, 선언 파일, 설정과 마이그레이션까지 실무에 필요한 타입스크립트 지식을 다룹니다. 자바스크립트 프로젝트를 더 안전하게 만드는 방법을 익힐 수 있습니다.",
     shortDescription: "자바스크립트 프로젝트를 단단하게 만드는 타입 설계.",
     thumbnail: "image/images/images (18).jpg",
-    loanStatus: "대출 중",
+    loanStatus: "대출 가능",
     location: "디지털자료실 3층",
     callNumber: "005.138-골691ㅅ",
-    returnDate: "2026-07-05",
+    returnDate: null,
     createdAt: "2025-05-04",
   },
   {
@@ -236,10 +236,10 @@ const mockBooks = [
     description: "생성형 AI가 법률 업무와 사회의 규칙을 어떻게 바꾸는지 다양한 사례로 살펴봅니다. 기술을 무조건 낙관하거나 두려워하기보다 책임 있게 활용할 관점을 제안합니다.",
     shortDescription: "생성형 AI와 법률의 만남에서 발견하는 새로운 질문.",
     thumbnail: "image/images/images (20).jpg",
-    loanStatus: "예약 가능",
+    loanStatus: "대출 가능",
     location: "인문·사회자료실 2층",
     callNumber: "360.004-박386ㅇ",
-    returnDate: "2026-06-30",
+    returnDate: null,
     createdAt: "2025-05-30",
   },
   {
@@ -272,10 +272,10 @@ const mockBooks = [
     description: "완벽하지 않은 하루를 다정하게 통과하는 마음의 문장들을 담았습니다. 지친 날에는 잠시 쉬어도 괜찮다는 위로와 다시 걸을 용기를 건넵니다.",
     shortDescription: "평범한 하루를 다정하게 보듬는 마음의 문장들.",
     thumbnail: "image/images/images (22).jpg",
-    loanStatus: "대출 중",
+    loanStatus: "대출 가능",
     location: "문학자료실 1층",
     callNumber: "814.7-한757ㅇ",
-    returnDate: "2026-06-27",
+    returnDate: null,
     createdAt: "2025-03-02",
   },
   {
@@ -290,10 +290,10 @@ const mockBooks = [
     description: "각자의 이유로 고향을 떠났던 세 친구가 오래된 도서관에서 다시 만나며 시작되는 이야기입니다. 지나온 계절과 아직 오지 않은 삶 사이에서 서로의 선택을 이해해 갑니다.",
     shortDescription: "다시 만난 세 친구가 함께 건너는 한여름의 성장 소설.",
     thumbnail: "image/images/images (23).jpg",
-    loanStatus: "예약 가능",
+    loanStatus: "대출 가능",
     location: "문학자료실 1층",
     callNumber: "813.7-서833ㅇ",
-    returnDate: "2026-07-02",
+    returnDate: null,
     createdAt: "2025-06-13",
   },
   {
@@ -576,12 +576,15 @@ function renderBookCards(books, target = null) {
 }
 
 function createBookCardMarkup(book) {
+  const user = getCurrentUser();
   const favorite = isFavorite(book.id);
   const loanedByUser = isLoaned(book.id);
   const isAvailable = book.loanStatus === "대출 가능";
-  const mainAction = isAvailable
-    ? `<button class="card-main-action" type="button" data-action="borrow" data-book-id="${book.id}" ${loanedByUser ? "disabled" : ""}>${loanedByUser ? "대여 중" : "대출하기"}</button>`
-    : `<a class="card-main-action reserve-action" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
+  const mainAction = user?.role === "admin"
+    ? '<span class="card-main-action admin-borrow-blocked">관리자 계정</span>'
+    : isAvailable
+      ? `<button class="card-main-action" type="button" data-action="borrow" data-book-id="${book.id}" ${loanedByUser ? "disabled" : ""}>${loanedByUser ? "대여 중" : "대출하기"}</button>`
+      : `<a class="card-main-action reserve-action" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
 
   return `
     <article class="book-card" data-book-card="${book.id}">
@@ -847,6 +850,9 @@ function saveLoans(loans) {
 function borrowBook(bookId) {
   const user = requireLogin();
   if (!user) return { success: false, redirected: true };
+  if (user.role === "admin") {
+    return { success: false, message: "관리자 계정은 도서를 대출할 수 없습니다." };
+  }
   const book = getBookById(bookId);
   if (!book) return { success: false, message: "도서 정보를 찾을 수 없습니다." };
   if (book.loanStatus !== "대출 가능") {
@@ -906,6 +912,9 @@ function saveReservations(reservations) {
 function reserveBook(bookId) {
   const user = requireLogin();
   if (!user) return { success: false, redirected: true };
+  if (user.role === "admin") {
+    return { success: false, message: "관리자 계정은 도서를 예약할 수 없습니다." };
+  }
   const book = getBookById(bookId);
   if (!book) return { success: false, message: "도서 정보를 찾을 수 없습니다." };
   if (book.loanStatus === "대출 가능") {
@@ -1189,8 +1198,9 @@ function initDetailPage() {
   document.title = `${book.title} | BOOK TO LEARN & RUN`;
   const favorite = isFavorite(book.id);
   const loaned = isLoaned(book.id);
-  const actionButton =
-    book.loanStatus === "대출 가능"
+  const actionButton = getCurrentUser()?.role === "admin"
+    ? '<span class="button button-secondary admin-borrow-blocked">관리자 계정은 대출할 수 없습니다</span>'
+    : book.loanStatus === "대출 가능"
       ? `<button class="button button-primary" type="button" data-action="borrow" data-book-id="${book.id}" ${loaned ? "disabled" : ""}>${loaned ? "대여 중인 도서" : "대출하기"}</button>`
       : `<a class="button button-primary" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
 
@@ -1258,7 +1268,8 @@ function initReservePage() {
   }
 
   const alreadyReserved = isReserved(book.id);
-  const canReserve = book.loanStatus !== "대출 가능";
+  const isAdmin = getCurrentUser()?.role === "admin";
+  const canReserve = !isAdmin && book.loanStatus !== "대출 가능";
 
   container.innerHTML = `
     <div class="reserve-grid">
@@ -1287,7 +1298,9 @@ function initReservePage() {
           <li>예약 현황과 취소는 마이페이지에서 관리할 수 있습니다.</li>
         </ul>
         ${
-          canReserve
+          isAdmin
+            ? '<div class="available-guide">관리자 계정은 도서를 대출하거나 예약할 수 없습니다.</div>'
+            : canReserve
             ? `
               <p class="reserve-message" id="reserve-message">${alreadyReserved ? "이미 예약 신청한 도서입니다." : ""}</p>
               <button class="button button-primary button-full" id="reserve-submit" type="button" ${alreadyReserved ? "disabled" : ""}>${alreadyReserved ? "예약 완료" : "예약 신청하기"}</button>
@@ -1412,8 +1425,11 @@ async function initAdminPage() {
   await Promise.all([renderAdminUsers(), renderAdminBooks()]);
 
   document.getElementById("refresh-users")?.addEventListener("click", renderAdminUsers);
-  document.getElementById("cancel-book-edit")?.addEventListener("click", resetAdminBookForm);
+  document.getElementById("reset-book-create")?.addEventListener("click", resetAdminBookForm);
   document.getElementById("admin-book-form")?.addEventListener("submit", saveAdminBook);
+  document.getElementById("admin-book-edit-form")?.addEventListener("submit", saveAdminBook);
+  document.getElementById("close-book-edit")?.addEventListener("click", closeAdminBookDialog);
+  document.getElementById("cancel-book-edit")?.addEventListener("click", closeAdminBookDialog);
   document.getElementById("admin-user-list")?.addEventListener("click", handleAdminUserAction);
   document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
 }
@@ -1437,20 +1453,20 @@ async function renderAdminUsers() {
     target.innerHTML = `<tr><td colspan="7">${escapeHTML(error.message)}</td></tr>`;
     return;
   }
-  if (!data?.length) {
+  const members = (data || []).filter((member) => member.role !== "admin");
+  if (!members.length) {
     target.innerHTML = '<tr><td colspan="7">가입한 회원이 없습니다.</td></tr>';
     return;
   }
-  const currentUser = getCurrentUser();
-  target.innerHTML = data.map((member) => `
+  target.innerHTML = members.map((member) => `
     <tr>
       <td>${escapeHTML(member.login_id || "-")}</td>
       <td><input class="admin-name-input" type="text" value="${escapeHTML(member.name || "")}" maxlength="30" data-name-input="${member.user_id}" /></td>
       <td>${escapeHTML(member.email || "-")}</td>
-      <td><select data-role-select="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}><option value="member" ${member.role === "member" ? "selected" : ""}>회원</option><option value="admin" ${member.role === "admin" ? "selected" : ""}>관리자</option></select></td>
+      <td><select data-role-select="${member.user_id}"><option value="member" ${member.role === "member" ? "selected" : ""}>회원</option><option value="admin">관리자</option></select></td>
       <td>${formatDate(member.created_at)}</td>
       <td>${formatDate(member.last_sign_in_at)}</td>
-      <td><div class="admin-row-actions"><button class="table-action" type="button" data-admin-action="save-name" data-user-id="${member.user_id}">이름 저장</button><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>권한 저장</button><button class="table-action danger" type="button" data-admin-action="delete-user" data-user-id="${member.user_id}" data-user-name="${escapeHTML(member.name || member.email || "회원")}" ${member.user_id === currentUser.id ? "disabled" : ""}>삭제</button></div></td>
+      <td><div class="admin-row-actions"><button class="table-action" type="button" data-admin-action="save-user" data-user-id="${member.user_id}">저장</button><button class="table-action danger" type="button" data-admin-action="delete-user" data-user-id="${member.user_id}" data-user-name="${escapeHTML(member.name || member.email || "회원")}">삭제</button></div></td>
     </tr>
   `).join("");
 }
@@ -1460,27 +1476,23 @@ async function handleAdminUserAction(event) {
   if (!button) return;
   const userId = button.dataset.userId;
 
-  if (button.dataset.adminAction === "save-name") {
+  if (button.dataset.adminAction === "save-user") {
     const input = document.querySelector(`[data-name-input="${CSS.escape(userId)}"]`);
+    const roleSelect = document.querySelector(`[data-role-select="${CSS.escape(userId)}"]`);
     const nextName = String(input?.value || "").trim().replace(/\s+/g, " ");
     if (!nextName) {
       showToast("이름을 입력해 주세요.");
       return;
     }
     button.disabled = true;
-    const { error } = await window.btlrSupabase.rpc("admin_update_user_name", {
+    const { error } = await window.btlrSupabase.rpc("admin_update_user", {
       target_user_id: userId,
       next_name: nextName,
+      next_role: roleSelect?.value || "member",
     });
     button.disabled = false;
-    showToast(error ? error.message : "회원 이름을 변경했습니다.");
-    if (!error) {
-      if (userId === getCurrentUser().id) {
-        currentUserCache.name = nextName;
-        renderAuthArea();
-      }
-      await renderAdminUsers();
-    }
+    showToast(error ? error.message : "회원 정보를 저장했습니다.");
+    if (!error) await renderAdminUsers();
     return;
   }
 
@@ -1497,16 +1509,6 @@ async function handleAdminUserAction(event) {
     return;
   }
 
-  if (button.dataset.adminAction !== "save-role") return;
-  const select = document.querySelector(`[data-role-select="${CSS.escape(userId)}"]`);
-  button.disabled = true;
-  const { error } = await window.btlrSupabase.rpc("admin_set_user_role", {
-    target_user_id: userId,
-    next_role: select?.value,
-  });
-  button.disabled = false;
-  showToast(error ? error.message : "회원 권한을 변경했습니다.");
-  if (!error) await renderAdminUsers();
 }
 
 async function renderAdminBooks() {
@@ -1529,8 +1531,7 @@ function resetAdminBookForm() {
   if (form) form.elements.originalId.value = "";
 }
 
-function fillAdminBookForm(book) {
-  const form = document.getElementById("admin-book-form");
+function fillAdminBookForm(book, form) {
   if (!form) return;
   form.elements.originalId.value = book.id;
   form.elements.id.value = book.id;
@@ -1547,13 +1548,30 @@ function fillAdminBookForm(book) {
   form.elements.keywords.value = (book.keywords || []).join(", ");
   form.elements.shortDescription.value = book.shortDescription || "";
   form.elements.description.value = book.description || "";
-  form.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function openAdminBookDialog(book) {
+  const dialog = document.getElementById("book-edit-dialog");
+  const form = document.getElementById("admin-book-edit-form");
+  if (!dialog || !form) return;
+  fillAdminBookForm(book, form);
+  const message = document.getElementById("admin-book-edit-message");
+  if (message) {
+    message.textContent = "";
+    message.classList.remove("success");
+  }
+  dialog.showModal();
+}
+
+function closeAdminBookDialog() {
+  document.getElementById("book-edit-dialog")?.close();
 }
 
 async function saveAdminBook(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const message = document.getElementById("admin-book-message");
+  const isEdit = form.id === "admin-book-edit-form";
+  const message = document.getElementById(isEdit ? "admin-book-edit-message" : "admin-book-message");
   const values = Object.fromEntries(new FormData(form).entries());
   const book = {
     id: String(values.id || "").trim() || `book-${Date.now()}`,
@@ -1576,17 +1594,18 @@ async function saveAdminBook(event) {
     return;
   }
   const payload = serializeBookForDatabase(book);
-  const originalId = String(values.originalId || "");
-  const query = originalId
+  const originalId = isEdit ? String(values.originalId || "") : "";
+  const query = isEdit
     ? window.btlrSupabase.from("books").update(payload).eq("id", originalId)
     : window.btlrSupabase.from("books").insert(payload);
   const { error } = await query;
   if (message) {
-    message.textContent = error ? error.message : originalId ? "도서 정보를 수정했습니다." : "도서를 추가했습니다.";
+    message.textContent = error ? error.message : isEdit ? "도서 정보를 수정했습니다." : "도서를 추가했습니다.";
     message.classList.toggle("success", !error);
   }
   if (!error) {
-    resetAdminBookForm();
+    if (isEdit) closeAdminBookDialog();
+    else resetAdminBookForm();
     await renderAdminBooks();
   }
 }
@@ -1597,7 +1616,7 @@ async function handleAdminBookAction(event) {
   const book = getBookById(button.dataset.bookId);
   if (!book) return;
   if (button.dataset.adminBookAction === "edit") {
-    fillAdminBookForm(book);
+    openAdminBookDialog(book);
     return;
   }
   if (!window.confirm(`'${book.title}' 도서를 삭제할까요?`)) return;
