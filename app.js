@@ -283,12 +283,13 @@ const mockBooks = [
 let toastTimer = null;
 let currentUserCache = null;
 let booksCache = mockBooks;
+let loansCache = [];
 const ADMIN_BOOK_DRAFT_PREFIX = "btlr_admin_book_draft";
 const ADMIN_BOOK_DRAFT_DB = "btlr-admin-drafts";
 
 async function initApp() {
   await loadCurrentUser();
-  await loadBooksFromSupabase();
+  await Promise.all([loadBooksFromSupabase(), loadUserLoansFromSupabase()]);
   handleHeaderSearch();
   renderAuthArea();
   handleGlobalActions();
@@ -412,6 +413,8 @@ function getBookById(bookId) {
 }
 
 function mapDatabaseBook(book) {
+  const totalQuantity = Math.max(Number(book.total_quantity) || 1, 1);
+  const availableQuantity = Math.max(Math.min(Number(book.available_quantity) || 0, totalQuantity), 0);
   return {
     id: book.id,
     title: book.title || "제목 없음",
@@ -423,7 +426,9 @@ function mapDatabaseBook(book) {
     description: book.description || "",
     shortDescription: book.short_description || book.description || "",
     thumbnail: book.thumbnail || "",
-    loanStatus: book.loan_status || "대출 가능",
+    totalQuantity,
+    availableQuantity,
+    loanStatus: availableQuantity > 0 ? "대출 가능" : "대출 중",
     returnDate: book.return_date || null,
     createdAt: book.created_at || new Date().toISOString(),
   };
@@ -441,7 +446,7 @@ function serializeBookForDatabase(book) {
     description: book.description || null,
     short_description: book.shortDescription || null,
     thumbnail: book.thumbnail || null,
-    loan_status: book.loanStatus || "대출 가능",
+    total_quantity: Math.max(Number(book.totalQuantity) || 1, 1),
     return_date: book.returnDate || null,
   };
 }
@@ -450,7 +455,7 @@ async function loadBooksFromSupabase() {
   if (!window.btlrSupabase) return;
   const { data, error } = await window.btlrSupabase
     .from("books")
-    .select("id, title, author, publisher, published_date, category, keywords, description, short_description, thumbnail, loan_status, return_date, created_at")
+    .select("id, title, author, publisher, published_date, category, keywords, description, short_description, thumbnail, loan_status, return_date, total_quantity, available_quantity, created_at")
     .order("created_at", { ascending: false });
   if (!error && data?.length) booksCache = data.map(mapDatabaseBook);
 }
@@ -521,7 +526,7 @@ function createBookCardMarkup(book) {
   const user = getCurrentUser();
   const favorite = isFavorite(book.id);
   const loanedByUser = isLoaned(book.id);
-  const isAvailable = book.loanStatus === "대출 가능";
+  const isAvailable = (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0;
   const mainAction = user?.role === "admin"
     ? '<span class="card-main-action admin-borrow-blocked">관리자 계정</span>'
     : isAvailable
@@ -782,14 +787,35 @@ function isFavorite(bookId) {
 }
 
 function getLoans() {
-  return getStoredArray(STORAGE_KEYS.loans);
+  return [...loansCache];
 }
 
-function saveLoans(loans) {
-  setStoredArray(STORAGE_KEYS.loans, loans);
+async function loadUserLoansFromSupabase() {
+  const user = getCurrentUser();
+  if (!user || !window.btlrSupabase) {
+    loansCache = [];
+    return;
+  }
+  const { data, error } = await window.btlrSupabase
+    .from("book_loans")
+    .select("id, user_id, book_id, status, borrowed_at, due_at")
+    .eq("status", "active")
+    .order("borrowed_at", { ascending: false });
+  if (error) {
+    loansCache = [];
+    return;
+  }
+  loansCache = (data || []).map((loan) => ({
+    id: loan.id,
+    userId: loan.user_id,
+    bookId: loan.book_id,
+    loanStatus: "대여 중",
+    borrowedAt: loan.borrowed_at,
+    dueDate: loan.due_at,
+  }));
 }
 
-function borrowBook(bookId) {
+async function borrowBook(bookId) {
   const user = requireLogin();
   if (!user) return { success: false, redirected: true };
   if (user.role === "admin") {
@@ -797,42 +823,37 @@ function borrowBook(bookId) {
   }
   const book = getBookById(bookId);
   if (!book) return { success: false, message: "도서 정보를 찾을 수 없습니다." };
-  if (book.loanStatus !== "대출 가능") {
+  if ((book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) < 1) {
     return { success: false, message: "현재 바로 대출할 수 없는 도서입니다." };
   }
   if (isLoaned(bookId)) {
     return { success: false, message: "이미 대여 목록에 있는 도서입니다." };
   }
 
-  const loans = getLoans();
-  const borrowedAt = new Date().toISOString();
-  loans.push({
-    id: generateId("loan"),
-    userId: user.id,
-    bookId,
-    loanStatus: "대여 중",
-    borrowedAt,
-    dueDate: addDays(borrowedAt, 14),
+  const { data, error } = await window.btlrSupabase.rpc("borrow_book", {
+    target_book_id: bookId,
   });
-  saveLoans(loans);
+  if (error) return { success: false, message: error.message };
+  await Promise.all([loadUserLoansFromSupabase(), loadBooksFromSupabase()]);
   return {
     success: true,
-    message: `대출이 완료되었습니다. 반납 예정일은 ${formatDate(addDays(borrowedAt, 14))}입니다.`,
+    message: `대출이 완료되었습니다. 반납 예정일은 ${formatDate(data?.dueAt)}입니다.`,
   };
 }
 
-function removeLoan(loanId) {
+async function removeLoan(loanId) {
   const user = getCurrentUser();
   if (!user) return { success: false, message: "로그인이 필요합니다." };
-  const loans = getLoans();
-  const exists = loans.some(
+  const exists = getLoans().some(
     (loan) => loan.id === loanId && loan.userId === user.id,
   );
   if (!exists) return { success: false, message: "대여 정보를 찾을 수 없습니다." };
-  saveLoans(
-    loans.filter((loan) => !(loan.id === loanId && loan.userId === user.id)),
-  );
-  return { success: true, message: "대여 목록에서 삭제했습니다." };
+  const { error } = await window.btlrSupabase.rpc("return_book", {
+    target_loan_id: loanId,
+  });
+  if (error) return { success: false, message: error.message };
+  await Promise.all([loadUserLoansFromSupabase(), loadBooksFromSupabase()]);
+  return { success: true, message: "도서를 반납했습니다." };
 }
 
 function isLoaned(bookId) {
@@ -957,7 +978,7 @@ function handleGlobalActions() {
     }
 
     if (action === "borrow") {
-      result = borrowBook(bookId);
+      result = await borrowBook(bookId);
     }
 
     if (action === "remove-favorite") {
@@ -965,7 +986,7 @@ function handleGlobalActions() {
     }
 
     if (action === "remove-loan") {
-      result = removeLoan(trigger.dataset.recordId);
+      result = await removeLoan(trigger.dataset.recordId);
     }
 
     if (action === "cancel-reservation") {
@@ -977,7 +998,7 @@ function handleGlobalActions() {
 
     const page = getCurrentPage();
     if (page === "mypage") {
-      initMyPage();
+      await initMyPage();
     } else if (page === "detail") {
       initDetailPage();
     } else {
@@ -1142,7 +1163,7 @@ function initDetailPage() {
   const loaned = isLoaned(book.id);
   const actionButton = getCurrentUser()?.role === "admin"
     ? '<span class="button button-secondary admin-borrow-blocked">관리자 계정은 대출할 수 없습니다</span>'
-    : book.loanStatus === "대출 가능"
+    : (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0
       ? `<button class="button button-primary" type="button" data-action="borrow" data-book-id="${book.id}" ${loaned ? "disabled" : ""}>${loaned ? "대여 중인 도서" : "대출하기"}</button>`
       : `<a class="button button-primary" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
 
@@ -1164,6 +1185,7 @@ function initDetailPage() {
           <div><dt>출판사</dt><dd>${escapeHTML(book.publisher)}</dd></div>
           <div><dt>출판일</dt><dd>${formatDate(book.publishedDate)}</dd></div>
           <div><dt>카테고리</dt><dd>${escapeHTML(book.category)}</dd></div>
+          <div><dt>대출 가능 수량</dt><dd>${book.availableQuantity ?? 1} / ${book.totalQuantity ?? 1}권</dd></div>
         </dl>
         ${book.returnDate ? `<p class="return-notice">예상 반납일 ${formatDate(book.returnDate)} · 반납 후 순차적으로 이용할 수 있습니다.</p>` : ""}
         <div class="detail-actions">
@@ -1458,7 +1480,7 @@ async function renderAdminBooks() {
   target.innerHTML = books.length ? books.map((book) => `
     <article class="admin-book-row">
       <img src="${escapeHTML(book.thumbnail)}" alt="" onerror="this.hidden=true" />
-      <div><strong>${escapeHTML(book.title)}</strong><span>${escapeHTML(book.author)} · ${escapeHTML(book.publisher)}</span><small>${escapeHTML(book.id)} · ${escapeHTML(book.category)} · ${escapeHTML(book.loanStatus)}</small></div>
+      <div><strong>${escapeHTML(book.title)}</strong><span>${escapeHTML(book.author)} · ${escapeHTML(book.publisher)}</span><small>${escapeHTML(book.id)} · ${escapeHTML(book.category)} · 재고 ${book.availableQuantity ?? 1}/${book.totalQuantity ?? 1}권</small></div>
       <div class="admin-row-actions"><button type="button" data-admin-book-action="edit" data-book-id="${escapeHTML(book.id)}">수정</button><button type="button" data-admin-book-action="delete" data-book-id="${escapeHTML(book.id)}">삭제</button></div>
     </article>
   `).join("") : '<p class="admin-empty">등록된 도서가 없습니다.</p>';
@@ -1470,6 +1492,7 @@ function resetAdminBookForm() {
   if (form) {
     form.elements.originalId.value = "";
     form.elements.thumbnail.value = "";
+    form.elements.totalQuantity.value = "1";
     renderBookCoverPreview(form, "");
   }
   clearAdminBookDraft();
@@ -1530,7 +1553,7 @@ function saveAdminBookDraft(form) {
   if (!form || form.id !== "admin-book-form") return;
   const fieldNames = [
     "title", "author", "publisher", "publishedDate", "category",
-    "loanStatus", "keywords", "shortDescription", "description",
+    "totalQuantity", "keywords", "shortDescription", "description",
   ];
   const values = Object.fromEntries(fieldNames.map((name) => [name, form.elements[name]?.value || ""]));
   try {
@@ -1599,7 +1622,7 @@ function fillAdminBookForm(book, form) {
   form.elements.publisher.value = book.publisher || "";
   form.elements.publishedDate.value = book.publishedDate || "";
   form.elements.category.value = book.category || "";
-  form.elements.loanStatus.value = book.loanStatus || "대출 가능";
+  form.elements.totalQuantity.value = String(book.totalQuantity ?? 1);
   form.elements.thumbnail.value = book.thumbnail || "";
   form.elements.keywords.value = (book.keywords || []).join(", ");
   form.elements.shortDescription.value = book.shortDescription || "";
@@ -1757,6 +1780,12 @@ async function saveAdminBook(event) {
     if (submitButton) submitButton.disabled = false;
     return;
   }
+  const totalQuantity = Number(values.totalQuantity);
+  if (!Number.isInteger(totalQuantity) || totalQuantity < 1) {
+    showBookFormMessage(form, "전체 수량은 1 이상의 정수로 입력해 주세요.");
+    if (submitButton) submitButton.disabled = false;
+    return;
+  }
   if (needsBookMetadata(form)) {
     showBookFormMessage(form, "AI가 빈 도서 정보를 작성하고 있습니다...");
     const aiResult = await fillBookMetadataWithAI(form);
@@ -1786,7 +1815,8 @@ async function saveAdminBook(event) {
     description: String(values.description || "").trim(),
     shortDescription: String(values.shortDescription || "").trim(),
     thumbnail: coverResult.url,
-    loanStatus: values.loanStatus || "대출 가능",
+    totalQuantity,
+    loanStatus: "대출 가능",
   };
   const payload = serializeBookForDatabase(book);
   const originalId = isEdit ? String(values.originalId || "") : "";
@@ -1972,7 +2002,7 @@ function renderMyList(containerId, records, type, emptyTitle, emptyText) {
           dateLabel: "반납 예정",
           date: record.dueDate,
           action: "remove-loan",
-          actionText: "목록 삭제",
+          actionText: "반납하기",
         },
         reservation: {
           status: record.reservationStatus,
