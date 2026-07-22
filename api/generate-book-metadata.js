@@ -34,7 +34,7 @@ module.exports = async function handler(request, response) {
   const author = String(input.author || "").trim().slice(0, 120);
   if (!title || !author) return response.status(400).json({ message: "제목과 저자가 필요합니다." });
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
   const apiResponse = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     {
@@ -81,7 +81,6 @@ module.exports = async function handler(request, response) {
             required: ["author", "publisher", "publishedDate", "category", "keywords", "shortDescription", "description"],
         },
         maxOutputTokens: 1200,
-        temperature: 0.4,
       },
     }),
   });

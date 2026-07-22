@@ -28,7 +28,7 @@ Vercel 프로젝트의 `Settings → Environment Variables`에 다음 값을 등
 
 ```text
 GEMINI_API_KEY=발급받은_Gemini_API_키
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 등록 후 Vercel에서 다시 배포해야 `/api/generate-book-metadata` 함수가 환경변수를 읽습니다.
