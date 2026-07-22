@@ -639,9 +639,15 @@ async function loginUser(email, password) {
   });
 
   if (error) {
+    const normalizedError = error.message.toLocaleLowerCase();
+    const message = normalizedError.includes("email not confirmed")
+      ? "이메일 인증을 완료한 후 로그인해 주세요."
+      : normalizedError.includes("invalid login credentials")
+        ? "이메일 또는 비밀번호가 올바르지 않습니다."
+        : "로그인 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.";
     return {
       success: false,
-      message: "이메일 또는 비밀번호가 올바르지 않습니다.",
+      message,
     };
   }
 
