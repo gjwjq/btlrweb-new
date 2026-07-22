@@ -1445,12 +1445,12 @@ async function renderAdminUsers() {
   target.innerHTML = data.map((member) => `
     <tr>
       <td>${escapeHTML(member.login_id || "-")}</td>
-      <td>${escapeHTML(member.name || "-")}</td>
+      <td><input class="admin-name-input" type="text" value="${escapeHTML(member.name || "")}" maxlength="30" data-name-input="${member.user_id}" /></td>
       <td>${escapeHTML(member.email || "-")}</td>
       <td><select data-role-select="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}><option value="member" ${member.role === "member" ? "selected" : ""}>회원</option><option value="admin" ${member.role === "admin" ? "selected" : ""}>관리자</option></select></td>
       <td>${formatDate(member.created_at)}</td>
       <td>${formatDate(member.last_sign_in_at)}</td>
-      <td><div class="admin-row-actions"><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>권한 저장</button><button class="table-action danger" type="button" data-admin-action="delete-user" data-user-id="${member.user_id}" data-user-name="${escapeHTML(member.name || member.email || "회원")}" ${member.user_id === currentUser.id ? "disabled" : ""}>삭제</button></div></td>
+      <td><div class="admin-row-actions"><button class="table-action" type="button" data-admin-action="save-name" data-user-id="${member.user_id}">이름 저장</button><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>권한 저장</button><button class="table-action danger" type="button" data-admin-action="delete-user" data-user-id="${member.user_id}" data-user-name="${escapeHTML(member.name || member.email || "회원")}" ${member.user_id === currentUser.id ? "disabled" : ""}>삭제</button></div></td>
     </tr>
   `).join("");
 }
@@ -1459,6 +1459,30 @@ async function handleAdminUserAction(event) {
   const button = event.target.closest("[data-admin-action]");
   if (!button) return;
   const userId = button.dataset.userId;
+
+  if (button.dataset.adminAction === "save-name") {
+    const input = document.querySelector(`[data-name-input="${CSS.escape(userId)}"]`);
+    const nextName = String(input?.value || "").trim().replace(/\s+/g, " ");
+    if (!nextName) {
+      showToast("이름을 입력해 주세요.");
+      return;
+    }
+    button.disabled = true;
+    const { error } = await window.btlrSupabase.rpc("admin_update_user_name", {
+      target_user_id: userId,
+      next_name: nextName,
+    });
+    button.disabled = false;
+    showToast(error ? error.message : "회원 이름을 변경했습니다.");
+    if (!error) {
+      if (userId === getCurrentUser().id) {
+        currentUserCache.name = nextName;
+        renderAuthArea();
+      }
+      await renderAdminUsers();
+    }
+    return;
+  }
 
   if (button.dataset.adminAction === "delete-user") {
     const userName = button.dataset.userName || "이 회원";
@@ -1606,6 +1630,14 @@ function initMyPage() {
     `;
   }
 
+  const nameForm = document.getElementById("profile-name-form");
+  if (nameForm) {
+    nameForm.elements.name.value = user.name;
+    nameForm.onsubmit = updateMyName;
+  }
+  const passwordForm = document.getElementById("profile-password-form");
+  if (passwordForm) passwordForm.onsubmit = updateMyPassword;
+
   const favorites = getFavorites()
     .filter((record) => record.userId === user.id)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1641,6 +1673,50 @@ function initMyPage() {
     "예약한 도서가 없어요",
     "대출 중인 책을 예약하면 이곳에서 현황을 확인할 수 있어요.",
   );
+}
+
+async function updateMyName(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = document.getElementById("profile-name-message");
+  const nextName = String(new FormData(form).get("name") || "").trim().replace(/\s+/g, " ");
+  if (!nextName || nextName.length > 30) {
+    if (message) message.textContent = "이름은 1~30자로 입력해 주세요.";
+    return;
+  }
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = true;
+  const { error } = await window.btlrSupabase.rpc("update_my_name", { next_name: nextName });
+  if (button) button.disabled = false;
+  if (message) {
+    message.textContent = error ? error.message : "이름을 변경했습니다.";
+    message.classList.toggle("success", !error);
+  }
+  if (!error) {
+    currentUserCache.name = nextName;
+    renderAuthArea();
+    initMyPage();
+  }
+}
+
+async function updateMyPassword(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const message = document.getElementById("profile-password-message");
+  const password = String(new FormData(form).get("password") || "");
+  if (password.length < 8) {
+    if (message) message.textContent = "새 비밀번호는 8자 이상 입력해 주세요.";
+    return;
+  }
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = true;
+  const { error } = await window.btlrSupabase.auth.updateUser({ password });
+  if (button) button.disabled = false;
+  if (message) {
+    message.textContent = error ? error.message : "비밀번호를 변경했습니다.";
+    message.classList.toggle("success", !error);
+  }
+  if (!error) form.reset();
 }
 
 function setText(id, value) {
