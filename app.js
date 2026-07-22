@@ -529,8 +529,10 @@ function createBookCardMarkup(book) {
   const isAvailable = (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0;
   const mainAction = user?.role === "admin"
     ? '<span class="card-main-action admin-borrow-blocked">관리자 계정</span>'
+    : loanedByUser
+      ? '<span class="card-main-action admin-borrow-blocked">대여 중</span>'
     : isAvailable
-      ? `<button class="card-main-action" type="button" data-action="borrow" data-book-id="${book.id}" ${loanedByUser ? "disabled" : ""}>${loanedByUser ? "대여 중" : "대출하기"}</button>`
+      ? `<button class="card-main-action" type="button" data-action="borrow" data-book-id="${book.id}">대출하기</button>`
       : `<a class="card-main-action reserve-action" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
 
   return `
@@ -880,6 +882,9 @@ function reserveBook(bookId) {
   }
   const book = getBookById(bookId);
   if (!book) return { success: false, message: "도서 정보를 찾을 수 없습니다." };
+  if (isLoaned(bookId)) {
+    return { success: false, message: "현재 본인이 대출 중인 도서는 예약할 수 없습니다." };
+  }
   if (book.loanStatus === "대출 가능") {
     return { success: false, message: "현재 대출 가능한 도서입니다." };
   }
@@ -1163,8 +1168,10 @@ function initDetailPage() {
   const loaned = isLoaned(book.id);
   const actionButton = getCurrentUser()?.role === "admin"
     ? '<span class="button button-secondary admin-borrow-blocked">관리자 계정은 대출할 수 없습니다</span>'
+    : loaned
+      ? '<span class="button button-secondary admin-borrow-blocked">현재 대여 중인 도서입니다</span>'
     : (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0
-      ? `<button class="button button-primary" type="button" data-action="borrow" data-book-id="${book.id}" ${loaned ? "disabled" : ""}>${loaned ? "대여 중인 도서" : "대출하기"}</button>`
+      ? `<button class="button button-primary" type="button" data-action="borrow" data-book-id="${book.id}">대출하기</button>`
       : `<a class="button button-primary" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
 
   container.innerHTML = `
@@ -1229,8 +1236,9 @@ function initReservePage() {
   }
 
   const alreadyReserved = isReserved(book.id);
+  const loanedByUser = isLoaned(book.id);
   const isAdmin = getCurrentUser()?.role === "admin";
-  const canReserve = !isAdmin && book.loanStatus !== "대출 가능";
+  const canReserve = !isAdmin && !loanedByUser && book.loanStatus !== "대출 가능";
 
   container.innerHTML = `
     <div class="reserve-grid">
@@ -1259,6 +1267,8 @@ function initReservePage() {
         ${
           isAdmin
             ? '<div class="available-guide">관리자 계정은 도서를 대출하거나 예약할 수 없습니다.</div>'
+            : loanedByUser
+            ? '<div class="available-guide">현재 본인이 대출 중인 도서입니다. 반납 후 다시 이용할 수 있습니다.</div><a class="button button-secondary button-full" href="mypage.html#loans-section" style="margin-top:8px">마이페이지에서 확인</a>'
             : canReserve
             ? `
               <p class="reserve-message" id="reserve-message">${alreadyReserved ? "이미 예약 신청한 도서입니다." : ""}</p>
