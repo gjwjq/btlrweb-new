@@ -283,6 +283,8 @@ const mockBooks = [
 let toastTimer = null;
 let currentUserCache = null;
 let booksCache = mockBooks;
+const ADMIN_BOOK_DRAFT_PREFIX = "btlr_admin_book_draft";
+const ADMIN_BOOK_DRAFT_DB = "btlr-admin-drafts";
 
 async function initApp() {
   await loadCurrentUser();
@@ -1368,6 +1370,7 @@ async function initAdminPage() {
   document.getElementById("admin-user-list")?.addEventListener("click", handleAdminUserAction);
   document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
   document.querySelectorAll("#admin-book-form, #admin-book-edit-form").forEach(bindBookFormEnhancements);
+  await restoreAdminBookDraft();
 }
 
 async function seedDefaultBooksIfEmpty() {
@@ -1469,6 +1472,122 @@ function resetAdminBookForm() {
     form.elements.thumbnail.value = "";
     renderBookCoverPreview(form, "");
   }
+  clearAdminBookDraft();
+}
+
+function getAdminBookDraftKey() {
+  return `${ADMIN_BOOK_DRAFT_PREFIX}:${getCurrentUser()?.id || "unknown"}`;
+}
+
+function openAdminBookDraftDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(ADMIN_BOOK_DRAFT_DB, 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains("covers")) {
+        request.result.createObjectStore("covers");
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function setAdminBookDraftCover(file) {
+  try {
+    const database = await openAdminBookDraftDatabase();
+    await new Promise((resolve, reject) => {
+      const transaction = database.transaction("covers", "readwrite");
+      const store = transaction.objectStore("covers");
+      if (file) store.put(file, getAdminBookDraftKey());
+      else store.delete(getAdminBookDraftKey());
+      transaction.oncomplete = resolve;
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+  } catch {
+    // 브라우저가 파일 임시 저장을 제한해도 텍스트 초안 저장은 유지합니다.
+  }
+}
+
+async function getAdminBookDraftCover() {
+  try {
+    const database = await openAdminBookDraftDatabase();
+    const file = await new Promise((resolve, reject) => {
+      const request = database.transaction("covers", "readonly")
+        .objectStore("covers")
+        .get(getAdminBookDraftKey());
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+    database.close();
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+function saveAdminBookDraft(form) {
+  if (!form || form.id !== "admin-book-form") return;
+  const fieldNames = [
+    "title", "author", "publisher", "publishedDate", "category",
+    "loanStatus", "keywords", "shortDescription", "description",
+  ];
+  const values = Object.fromEntries(fieldNames.map((name) => [name, form.elements[name]?.value || ""]));
+  try {
+    localStorage.setItem(getAdminBookDraftKey(), JSON.stringify({
+      values,
+      autoFieldsOpen: Boolean(form.querySelector(".admin-auto-fields")?.open),
+      savedAt: new Date().toISOString(),
+    }));
+  } catch {
+    // 저장 공간이 차도 도서 작성 기능 자체는 계속 사용할 수 있습니다.
+  }
+}
+
+async function restoreAdminBookDraft() {
+  const form = document.getElementById("admin-book-form");
+  if (!form) return;
+  let draft = null;
+  try {
+    draft = JSON.parse(localStorage.getItem(getAdminBookDraftKey()) || "null");
+  } catch {
+    draft = null;
+  }
+
+  if (draft?.values) {
+    Object.entries(draft.values).forEach(([name, value]) => {
+      if (form.elements[name]) form.elements[name].value = value;
+    });
+    if (draft.autoFieldsOpen) form.querySelector(".admin-auto-fields")?.setAttribute("open", "");
+  }
+
+  const savedCover = await getAdminBookDraftCover();
+  if (savedCover && form.elements.coverFile) {
+    try {
+      const file = savedCover instanceof File
+        ? savedCover
+        : new File([savedCover], savedCover.name || "book-cover.jpg", { type: savedCover.type || "image/jpeg" });
+      const transfer = new DataTransfer();
+      transfer.items.add(file);
+      form.elements.coverFile.files = transfer.files;
+      renderBookCoverPreview(form, URL.createObjectURL(file));
+    } catch {
+      // 파일 입력 복원이 제한된 브라우저에서는 텍스트 초안만 복원합니다.
+    }
+  }
+
+  if (draft?.values || savedCover) {
+    showBookFormMessage(form, "작성 중이던 도서 정보를 복원했습니다.", true);
+  }
+}
+
+function clearAdminBookDraft() {
+  try {
+    localStorage.removeItem(getAdminBookDraftKey());
+  } catch {
+    // 삭제 실패는 저장 완료 처리에 영향을 주지 않습니다.
+  }
+  setAdminBookDraftCover(null);
 }
 
 function fillAdminBookForm(book, form) {
@@ -1495,16 +1614,24 @@ function bindBookFormEnhancements(form) {
     const file = fileInput.files?.[0];
     if (!file) {
       renderBookCoverPreview(form, form.elements.thumbnail.value);
+      if (form.id === "admin-book-form") setAdminBookDraftCover(null);
       return;
     }
     renderBookCoverPreview(form, URL.createObjectURL(file));
+    if (form.id === "admin-book-form") setAdminBookDraftCover(file);
   });
+  if (form.id === "admin-book-form") {
+    form.addEventListener("input", () => saveAdminBookDraft(form));
+    form.addEventListener("change", () => saveAdminBookDraft(form));
+    form.querySelector(".admin-auto-fields")?.addEventListener("toggle", () => saveAdminBookDraft(form));
+  }
   form.querySelector("[data-ai-fill]")?.addEventListener("click", async (event) => {
     const button = event.currentTarget;
     button.disabled = true;
     const result = await fillBookMetadataWithAI(form);
     button.disabled = false;
     showBookFormMessage(form, result.message, result.success);
+    if (result.success) saveAdminBookDraft(form);
   });
 }
 
@@ -1638,6 +1765,7 @@ async function saveAdminBook(event) {
       if (submitButton) submitButton.disabled = false;
       return;
     }
+    saveAdminBookDraft(form);
     values = Object.fromEntries(new FormData(form).entries());
   }
   const generatedId = String(values.id || "").trim() || `book-${Date.now()}`;
