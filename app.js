@@ -528,9 +528,9 @@ function createBookCardMarkup(book) {
   const loanedByUser = isLoaned(book.id);
   const isAvailable = (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0;
   const mainAction = user?.role === "admin"
-    ? '<span class="card-main-action admin-borrow-blocked">관리자 계정</span>'
+    ? '<button class="card-main-action is-disabled" type="button" disabled>관리자 계정</button>'
     : loanedByUser
-      ? '<span class="card-main-action admin-borrow-blocked">대여 중</span>'
+      ? '<button class="card-main-action is-disabled" type="button" disabled>대여 중</button>'
     : isAvailable
       ? `<button class="card-main-action" type="button" data-action="borrow" data-book-id="${book.id}">대출하기</button>`
       : `<a class="card-main-action reserve-action" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;
@@ -1167,9 +1167,9 @@ function initDetailPage() {
   const favorite = isFavorite(book.id);
   const loaned = isLoaned(book.id);
   const actionButton = getCurrentUser()?.role === "admin"
-    ? '<span class="button button-secondary admin-borrow-blocked">관리자 계정은 대출할 수 없습니다</span>'
+    ? '<button class="button button-primary is-disabled" type="button" disabled>관리자 계정은 대출할 수 없습니다</button>'
     : loaned
-      ? '<span class="button button-secondary admin-borrow-blocked">현재 대여 중인 도서입니다</span>'
+      ? '<button class="button button-primary is-disabled" type="button" disabled>현재 대여 중인 도서입니다</button>'
     : (book.availableQuantity ?? (book.loanStatus === "대출 가능" ? 1 : 0)) > 0
       ? `<button class="button button-primary" type="button" data-action="borrow" data-book-id="${book.id}">대출하기</button>`
       : `<a class="button button-primary" href="reserve.html?id=${encodeURIComponent(book.id)}">예약 신청</a>`;

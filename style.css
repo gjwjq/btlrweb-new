@@ -917,6 +917,21 @@ img {
   background: var(--blue-pale);
 }
 
+.card-main-action.is-disabled,
+.button.is-disabled {
+  color: #fff;
+  background: var(--brown-soft);
+  box-shadow: none;
+  cursor: default;
+  opacity: 1;
+}
+
+.card-main-action.is-disabled:hover,
+.button.is-disabled:hover {
+  background: var(--brown-soft);
+  transform: none;
+}
+
 .category-section {
   background: var(--paper);
 }
@@ -2633,12 +2648,6 @@ img {
 .table-action.danger {
   border-color: #e3b5b5;
   color: #a22424;
-}
-
-.admin-borrow-blocked {
-  cursor: default;
-  opacity: 0.72;
-  text-align: center;
 }
 
 .admin-dialog {
