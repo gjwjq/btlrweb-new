@@ -2,8 +2,6 @@
 
 const STORAGE_KEYS = {
   recentSearches: "btlr_recent_searches",
-  users: "btlr_users",
-  currentUser: "btlr_current_user",
   favorites: "btlr_favorites",
   loans: "btlr_loans",
   reservations: "btlr_reservations",
@@ -337,8 +335,10 @@ const mockBooks = [
 ];
 
 let toastTimer = null;
+let currentUserCache = null;
 
-function initApp() {
+async function initApp() {
+  await loadCurrentUser();
   handleHeaderSearch();
   renderAuthArea();
   handleGlobalActions();
@@ -578,15 +578,7 @@ function getRecentSearches() {
   return getStoredArray(STORAGE_KEYS.recentSearches);
 }
 
-function getUsers() {
-  return getStoredArray(STORAGE_KEYS.users);
-}
-
-function saveUsers(users) {
-  setStoredArray(STORAGE_KEYS.users, users);
-}
-
-function signupUser(formData) {
+async function signupUser(formData) {
   const name = String(formData.name || "").trim();
   const email = String(formData.email || "").trim().toLocaleLowerCase();
   const password = String(formData.password || "");
@@ -598,66 +590,111 @@ function signupUser(formData) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { success: false, message: "올바른 이메일 형식을 입력해 주세요." };
   }
-  if (password.length < 4) {
-    return { success: false, message: "비밀번호는 4자 이상 입력해 주세요." };
+  if (password.length < 8) {
+    return { success: false, message: "비밀번호는 8자 이상 입력해 주세요." };
   }
   if (password !== confirmPassword) {
     return { success: false, message: "비밀번호와 비밀번호 확인이 일치하지 않습니다." };
   }
 
-  const users = getUsers();
-  if (users.some((user) => user.email.toLocaleLowerCase() === email)) {
-    return { success: false, message: "이미 가입된 이메일입니다." };
+  if (!window.btlrSupabase) {
+    return { success: false, message: "회원 서비스에 연결할 수 없습니다." };
   }
 
-  const user = {
-    id: generateId("user"),
-    name,
+  const { data, error } = await window.btlrSupabase.auth.signUp({
     email,
     password,
-    createdAt: new Date().toISOString(),
+    options: { data: { name } },
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return {
+    success: true,
+    message: data.session
+      ? "회원가입이 완료되었습니다."
+      : "회원가입이 완료되었습니다. 이메일 인증 후 로그인해 주세요.",
+    user: data.user,
   };
-  users.push(user);
-  saveUsers(users);
-  return { success: true, message: "회원가입이 완료되었습니다.", user };
 }
 
-function loginUser(email, password) {
+async function loginUser(email, password) {
   const normalizedEmail = String(email || "").trim().toLocaleLowerCase();
-  const user = getUsers().find(
-    (item) =>
-      item.email.toLocaleLowerCase() === normalizedEmail &&
-      item.password === String(password || ""),
-  );
+  if (!normalizedEmail || !password) {
+    return {
+      success: false,
+      message: "이메일과 비밀번호를 입력해 주세요.",
+    };
+  }
 
-  if (!user) {
+  if (!window.btlrSupabase) {
+    return { success: false, message: "회원 서비스에 연결할 수 없습니다." };
+  }
+
+  const { data, error } = await window.btlrSupabase.auth.signInWithPassword({
+    email: normalizedEmail,
+    password: String(password),
+  });
+
+  if (error) {
     return {
       success: false,
       message: "이메일 또는 비밀번호가 올바르지 않습니다.",
     };
   }
 
-  const currentUser = {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-  };
-  localStorage.setItem(STORAGE_KEYS.currentUser, JSON.stringify(currentUser));
-  return { success: true, message: "로그인되었습니다.", user: currentUser };
+  await loadCurrentUser(data.user);
+  return { success: true, message: "로그인되었습니다.", user: currentUserCache };
 }
 
-function logoutUser() {
-  localStorage.removeItem(STORAGE_KEYS.currentUser);
+async function logoutUser() {
+  if (window.btlrSupabase) {
+    await window.btlrSupabase.auth.signOut();
+  }
+  currentUserCache = null;
 }
 
 function getCurrentUser() {
-  try {
-    const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.currentUser) || "null");
-    return user && user.id ? user : null;
-  } catch (error) {
-    console.warn("로그인 정보를 읽지 못했습니다.", error);
+  return currentUserCache;
+}
+
+async function loadCurrentUser(knownUser = null) {
+  if (!window.btlrSupabase) {
+    currentUserCache = null;
     return null;
   }
+
+  let authUser = knownUser;
+  if (!authUser) {
+    const { data, error } = await window.btlrSupabase.auth.getSession();
+    if (error || !data.session?.user) {
+      currentUserCache = null;
+      return null;
+    }
+    authUser = data.session.user;
+  }
+
+  const { data: profile } = await window.btlrSupabase
+    .from("profiles")
+    .select("id, name, username, role, created_at")
+    .eq("id", authUser.id)
+    .maybeSingle();
+
+  currentUserCache = {
+    id: authUser.id,
+    email: authUser.email || "",
+    name:
+      profile?.name ||
+      authUser.user_metadata?.name ||
+      authUser.email?.split("@")[0] ||
+      "회원",
+    username: profile?.username || null,
+    role: profile?.role || "member",
+    createdAt: profile?.created_at || authUser.created_at,
+  };
+  return currentUserCache;
 }
 
 function requireLogin() {
@@ -866,7 +903,7 @@ function renderAuthArea() {
 }
 
 function handleGlobalActions() {
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const trigger = event.target.closest("[data-action]");
     if (!trigger) return;
 
@@ -875,7 +912,7 @@ function handleGlobalActions() {
     let result = null;
 
     if (action === "logout") {
-      logoutUser();
+      await logoutUser();
       window.location.href = "index.html";
       return;
     }
@@ -1210,19 +1247,23 @@ function initSignupPage() {
 
   const form = document.getElementById("signup-form");
   const message = document.getElementById("signup-message");
-  form?.addEventListener("submit", (event) => {
+  form?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
     const formData = Object.fromEntries(new FormData(form).entries());
-    const result = signupUser(formData);
+    const result = await signupUser(formData);
+    if (submitButton) submitButton.disabled = false;
     if (message) {
       message.textContent = result.message;
       message.classList.toggle("success", result.success);
     }
     if (result.success) {
       form.reset();
+      sessionStorage.setItem("btlr_signup_notice", result.message);
       window.setTimeout(() => {
         window.location.href = "login.html?joined=1";
-      }, 700);
+      }, 900);
     }
   });
 }
@@ -1236,19 +1277,27 @@ function initLoginPage() {
   const form = document.getElementById("login-form");
   const message = document.getElementById("login-message");
   const notice = sessionStorage.getItem("btlr_login_notice");
+  const signupNotice = sessionStorage.getItem("btlr_signup_notice");
 
   if (getQueryParam("joined") === "1" && message) {
-    message.textContent = "회원가입이 완료되었습니다. 로그인해 주세요.";
+    message.textContent = signupNotice || "회원가입이 완료되었습니다. 로그인해 주세요.";
     message.classList.add("success");
+    sessionStorage.removeItem("btlr_signup_notice");
   } else if (notice && message) {
     message.textContent = notice;
     sessionStorage.removeItem("btlr_login_notice");
   }
 
-  form?.addEventListener("submit", (event) => {
+  form?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
     const formData = new FormData(form);
-    const result = loginUser(formData.get("email"), formData.get("password"));
+    const result = await loginUser(
+      formData.get("email"),
+      formData.get("password"),
+    );
+    if (submitButton) submitButton.disabled = false;
     if (message) {
       message.textContent = result.message;
       message.classList.toggle("success", result.success);
@@ -1267,7 +1316,6 @@ function initMyPage() {
 
   renderAuthArea();
   const userSummary = document.getElementById("user-summary");
-  const userRecord = getUsers().find((item) => item.id === user.id);
   if (userSummary) {
     userSummary.innerHTML = `
       <div class="welcome-copy">
@@ -1278,7 +1326,7 @@ function initMyPage() {
       <div class="user-card">
         <div class="user-avatar">${escapeHTML(user.name.slice(0, 1).toUpperCase())}</div>
         <div><strong>${escapeHTML(user.name)}</strong><span>${escapeHTML(user.email)}</span></div>
-        <small>가입일 ${formatDate(userRecord?.createdAt || new Date())} · 도서관 회원</small>
+        <small>가입일 ${formatDate(user.createdAt || new Date())} · ${user.role === "admin" ? "관리자" : "도서관 회원"}</small>
       </div>
     `;
   }
