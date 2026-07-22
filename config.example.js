@@ -9,7 +9,7 @@
 window.BTLR_CONFIG = {
   supabase: {
     url: "https://YOUR_PROJECT.supabase.co",
-    anonKey: "YOUR_SUPABASE_ANON_KEY",
+    publishableKey: "YOUR_SUPABASE_PUBLISHABLE_KEY",
   },
   bookApi: {
     provider: "kakao", // kakao | naver | google | data4library
