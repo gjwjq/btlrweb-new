@@ -1414,7 +1414,7 @@ async function initAdminPage() {
   document.getElementById("refresh-users")?.addEventListener("click", renderAdminUsers);
   document.getElementById("cancel-book-edit")?.addEventListener("click", resetAdminBookForm);
   document.getElementById("admin-book-form")?.addEventListener("submit", saveAdminBook);
-  document.getElementById("admin-user-list")?.addEventListener("click", changeAdminUserRole);
+  document.getElementById("admin-user-list")?.addEventListener("click", handleAdminUserAction);
   document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
 }
 
@@ -1450,15 +1450,30 @@ async function renderAdminUsers() {
       <td><select data-role-select="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}><option value="member" ${member.role === "member" ? "selected" : ""}>회원</option><option value="admin" ${member.role === "admin" ? "selected" : ""}>관리자</option></select></td>
       <td>${formatDate(member.created_at)}</td>
       <td>${formatDate(member.last_sign_in_at)}</td>
-      <td><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>저장</button></td>
+      <td><div class="admin-row-actions"><button class="table-action" type="button" data-admin-action="save-role" data-user-id="${member.user_id}" ${member.user_id === currentUser.id ? "disabled" : ""}>권한 저장</button><button class="table-action danger" type="button" data-admin-action="delete-user" data-user-id="${member.user_id}" data-user-name="${escapeHTML(member.name || member.email || "회원")}" ${member.user_id === currentUser.id ? "disabled" : ""}>삭제</button></div></td>
     </tr>
   `).join("");
 }
 
-async function changeAdminUserRole(event) {
-  const button = event.target.closest('[data-admin-action="save-role"]');
+async function handleAdminUserAction(event) {
+  const button = event.target.closest("[data-admin-action]");
   if (!button) return;
   const userId = button.dataset.userId;
+
+  if (button.dataset.adminAction === "delete-user") {
+    const userName = button.dataset.userName || "이 회원";
+    if (!window.confirm(`${userName} 계정을 완전히 삭제할까요?`)) return;
+    button.disabled = true;
+    const { error } = await window.btlrSupabase.rpc("admin_delete_user", {
+      target_user_id: userId,
+    });
+    button.disabled = false;
+    showToast(error ? error.message : "회원 계정을 삭제했습니다.");
+    if (!error) await renderAdminUsers();
+    return;
+  }
+
+  if (button.dataset.adminAction !== "save-role") return;
   const select = document.querySelector(`[data-role-select="${CSS.escape(userId)}"]`);
   button.disabled = true;
   const { error } = await window.btlrSupabase.rpc("admin_set_user_role", {

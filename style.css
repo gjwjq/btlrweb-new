@@ -2591,6 +2591,11 @@ img {
   background: #fff;
 }
 
+.table-action.danger {
+  border-color: #e3b5b5;
+  color: #a22424;
+}
+
 .admin-book-form {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
