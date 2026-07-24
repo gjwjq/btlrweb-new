@@ -284,6 +284,7 @@ let toastTimer = null;
 let currentUserCache = null;
 let booksCache = mockBooks;
 let loansCache = [];
+let adminBookImportResults = [];
 const ADMIN_BOOK_DRAFT_PREFIX = "btlr_admin_book_draft";
 const ADMIN_BOOK_DRAFT_DB = "btlr-admin-drafts";
 
@@ -1401,6 +1402,9 @@ async function initAdminPage() {
   document.getElementById("cancel-book-edit")?.addEventListener("click", closeAdminBookDialog);
   document.getElementById("admin-user-list")?.addEventListener("click", handleAdminUserAction);
   document.getElementById("admin-book-list")?.addEventListener("click", handleAdminBookAction);
+  document.getElementById("book-import-search-form")?.addEventListener("submit", searchBooksForImport);
+  document.getElementById("book-import-select-all")?.addEventListener("change", toggleAllImportBooks);
+  document.getElementById("book-import-submit")?.addEventListener("click", importSelectedBooks);
   document.querySelectorAll("#admin-book-form, #admin-book-edit-form").forEach(bindBookFormEnhancements);
   await restoreAdminBookDraft();
 }
@@ -1480,6 +1484,216 @@ async function handleAdminUserAction(event) {
     return;
   }
 
+}
+
+function normalizeBookIdentity(title, author) {
+  return `${String(title || "").trim()}|${String(author || "").trim()}`
+    .toLocaleLowerCase("ko-KR")
+    .replace(/\s+/g, " ");
+}
+
+function createStableBookHash(value) {
+  let hash = 2166136261;
+  const input = String(value || "");
+  for (let index = 0; index < input.length; index += 1) {
+    hash ^= input.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function createImportedBookId(book) {
+  const isbn = String(book.isbn || "").replace(/[^0-9X]/gi, "");
+  return isbn
+    ? `book-kakao-${isbn}`
+    : `book-kakao-${createStableBookHash(book.externalId || normalizeBookIdentity(book.title, book.author))}`;
+}
+
+function setBookImportMessage(message, success = false) {
+  const target = document.getElementById("book-import-message");
+  if (!target) return;
+  target.textContent = message || "";
+  target.classList.toggle("success", success);
+}
+
+async function searchBooksForImport(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const values = Object.fromEntries(new FormData(form).entries());
+  const query = String(values.query || "").trim();
+  const category = String(values.category || "").trim() || query;
+  const size = Math.min(Math.max(Number(values.size) || 20, 1), 50);
+
+  if (!query) {
+    setBookImportMessage("검색어를 입력해 주세요.");
+    return;
+  }
+
+  if (form.elements.category && !form.elements.category.value.trim()) {
+    form.elements.category.value = category;
+  }
+  if (button) button.disabled = true;
+  setBookImportMessage("카카오 도서 API에서 검색하고 있습니다...");
+
+  const { data: sessionData } = await window.btlrSupabase.auth.getSession();
+  const accessToken = sessionData.session?.access_token;
+  if (!accessToken) {
+    if (button) button.disabled = false;
+    setBookImportMessage("관리자 로그인이 필요합니다.");
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      query,
+      category,
+      size: String(size),
+    });
+    const response = await fetch(`/api/search-books?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || "도서 검색에 실패했습니다.");
+
+    adminBookImportResults = Array.isArray(result.books) ? result.books : [];
+    renderBookImportResults(result.totalCount);
+    setBookImportMessage(
+      adminBookImportResults.length
+        ? `${adminBookImportResults.length}권을 불러왔습니다. 추가할 도서를 선택해 주세요.`
+        : "검색 결과가 없습니다. 다른 검색어를 입력해 주세요.",
+      adminBookImportResults.length > 0,
+    );
+  } catch (error) {
+    adminBookImportResults = [];
+    renderBookImportResults(0);
+    setBookImportMessage(error.message);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function renderBookImportResults(totalCount = 0) {
+  const wrapper = document.getElementById("book-import-results-wrap");
+  const target = document.getElementById("book-import-results");
+  const count = document.getElementById("book-import-result-count");
+  const selectAll = document.getElementById("book-import-select-all");
+  if (!wrapper || !target) return;
+
+  wrapper.hidden = adminBookImportResults.length === 0;
+  if (count) {
+    count.textContent = `검색 결과 ${adminBookImportResults.length}권 · 전체 검색 결과 ${Number(totalCount) || adminBookImportResults.length}권`;
+  }
+  if (selectAll) selectAll.checked = false;
+
+  const existingIdentities = new Set(
+    getBooks().map((book) => normalizeBookIdentity(book.title, book.author)),
+  );
+  const existingIds = new Set(getBooks().map((book) => book.id));
+  const resultIdentities = new Set();
+
+  target.innerHTML = adminBookImportResults.map((book, index) => {
+    const identity = normalizeBookIdentity(book.title, book.author);
+    const importedId = createImportedBookId(book);
+    const alreadyExists =
+      existingIdentities.has(identity) ||
+      existingIds.has(importedId) ||
+      resultIdentities.has(identity);
+    resultIdentities.add(identity);
+
+    return `
+      <label class="book-import-card ${alreadyExists ? "is-existing" : ""}">
+        <input type="checkbox" value="${index}" data-import-book ${alreadyExists ? "disabled" : ""} />
+        <span class="book-import-cover">
+          ${book.thumbnail
+            ? `<img src="${escapeHTML(book.thumbnail)}" alt="" loading="lazy" />`
+            : '<span class="cover-fallback" aria-hidden="true">B</span>'}
+        </span>
+        <span class="book-import-copy">
+          <strong>${escapeHTML(book.title)}</strong>
+          <span>${escapeHTML(book.author)}${book.publisher ? ` · ${escapeHTML(book.publisher)}` : ""}</span>
+          <small>${escapeHTML(book.publishedDate || "출판일 미상")} · ${escapeHTML(book.category || "기타")}</small>
+          ${alreadyExists ? "<b>이미 등록된 도서</b>" : ""}
+        </span>
+      </label>
+    `;
+  }).join("");
+}
+
+function toggleAllImportBooks(event) {
+  document
+    .querySelectorAll("[data-import-book]:not(:disabled)")
+    .forEach((checkbox) => {
+      checkbox.checked = event.currentTarget.checked;
+    });
+}
+
+async function importSelectedBooks() {
+  const button = document.getElementById("book-import-submit");
+  const selectedIndexes = [...document.querySelectorAll("[data-import-book]:checked")]
+    .map((checkbox) => Number(checkbox.value))
+    .filter(Number.isInteger);
+
+  if (!selectedIndexes.length) {
+    setBookImportMessage("추가할 도서를 한 권 이상 선택해 주세요.");
+    return;
+  }
+
+  const existingIdentities = new Set(
+    getBooks().map((book) => normalizeBookIdentity(book.title, book.author)),
+  );
+  const existingIds = new Set(getBooks().map((book) => book.id));
+  const pendingIdentities = new Set();
+  const booksToInsert = selectedIndexes
+    .map((index) => adminBookImportResults[index])
+    .filter(Boolean)
+    .filter((book) => {
+      const identity = normalizeBookIdentity(book.title, book.author);
+      const importedId = createImportedBookId(book);
+      if (
+        existingIdentities.has(identity) ||
+        existingIds.has(importedId) ||
+        pendingIdentities.has(identity)
+      ) {
+        return false;
+      }
+      pendingIdentities.add(identity);
+      return true;
+    })
+    .map((book) => serializeBookForDatabase({
+      id: createImportedBookId(book),
+      title: book.title,
+      author: book.author,
+      publisher: book.publisher || "",
+      publishedDate: book.publishedDate || null,
+      category: book.category || "기타",
+      keywords: Array.isArray(book.keywords) ? book.keywords : [],
+      description: book.description || "",
+      shortDescription: book.shortDescription || book.description || "",
+      thumbnail: book.thumbnail || "",
+      totalQuantity: 1,
+      returnDate: null,
+    }));
+
+  if (!booksToInsert.length) {
+    setBookImportMessage("선택한 도서는 모두 이미 등록되어 있습니다.");
+    renderBookImportResults(adminBookImportResults.length);
+    return;
+  }
+
+  if (button) button.disabled = true;
+  setBookImportMessage(`${booksToInsert.length}권을 Supabase에 추가하고 있습니다...`);
+  const { error } = await window.btlrSupabase.from("books").insert(booksToInsert);
+  if (button) button.disabled = false;
+
+  if (error) {
+    setBookImportMessage(error.message);
+    return;
+  }
+
+  await renderAdminBooks();
+  renderBookImportResults(adminBookImportResults.length);
+  setBookImportMessage(`${booksToInsert.length}권을 도서 목록에 추가했습니다.`, true);
 }
 
 async function renderAdminBooks() {

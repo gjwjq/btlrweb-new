@@ -36,3 +36,15 @@ GEMINI_MODEL=gemini-3.5-flash-lite
 ## 표지 이미지
 
 관리자 폼에서 JPG, JPEG, PNG, WEBP 파일을 선택할 수 있습니다. 이미지는 Supabase Storage의 공개 `book-covers` 버킷에 업로드되고, 공개 URL만 `books.thumbnail`에 저장됩니다. 최대 파일 크기는 5MB입니다.
+
+## 카카오 도서 API 가져오기
+
+관리자 페이지에서 카카오 책 검색 결과를 최대 50권까지 불러오고, 원하는 도서를 선택해 Supabase에 일괄 등록할 수 있습니다. 제목과 저자가 같은 기존 도서는 자동으로 제외되며 가져온 도서의 기본 수량은 1권입니다.
+
+Vercel 프로젝트의 `Settings → Environment Variables`에 다음 값을 등록하고 다시 배포합니다.
+
+```text
+KAKAO_REST_API_KEY=카카오_디벨로퍼스_REST_API_키
+```
+
+키는 브라우저에 포함되지 않고 `/api/search-books` 서버 함수에서만 사용합니다. 가져온 표지는 카카오가 제공한 썸네일 URL을 도서 정보에 저장합니다.

@@ -33,6 +33,27 @@
           </section>
           <section id="books" class="admin-panel">
             <div class="admin-panel-heading"><div><p class="eyebrow">COLLECTION</p><h2>도서 관리</h2></div></div>
+            <section class="book-import-panel" aria-labelledby="book-import-title">
+              <div class="book-import-heading">
+                <div><p class="eyebrow">BOOK API</p><h3 id="book-import-title">도서 API에서 가져오기</h3><p>검색한 도서를 선택해 한 번에 등록할 수 있습니다.</p></div>
+              </div>
+              <form id="book-import-search-form" class="book-import-search">
+                <div><label for="book-import-query">검색어</label><input id="book-import-query" name="query" type="search" placeholder="예: 자기계발, 자바스크립트, 소설" required /></div>
+                <div><label for="book-import-category">등록 카테고리</label><input id="book-import-category" name="category" type="text" placeholder="비우면 검색어 사용" /></div>
+                <div><label for="book-import-size">검색 권수</label><select id="book-import-size" name="size"><option value="10">10권</option><option value="20" selected>20권</option><option value="30">30권</option><option value="50">50권</option></select></div>
+                <button class="button button-primary" type="submit">도서 검색</button>
+              </form>
+              <p id="book-import-message" class="form-message" role="alert"></p>
+              <div id="book-import-results-wrap" hidden>
+                <div class="book-import-toolbar">
+                  <label><input id="book-import-select-all" type="checkbox" /> 전체 선택</label>
+                  <span id="book-import-result-count"></span>
+                  <button id="book-import-submit" class="button button-primary" type="button">선택 도서 추가</button>
+                </div>
+                <div id="book-import-results" class="book-import-results"></div>
+              </div>
+            </section>
+            <div class="admin-section-divider"><span>직접 도서 추가</span></div>
             <form id="admin-book-form" class="admin-book-form">
               <input type="hidden" name="originalId" />
               <input name="id" type="hidden" />
